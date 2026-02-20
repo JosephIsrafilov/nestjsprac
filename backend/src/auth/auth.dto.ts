@@ -10,7 +10,7 @@ export class LoginDto {
   password!: string;
 }
 
-export type CurrentUser = {
+export type AuthUser = {
   id: number;
   email: string;
   role: UserRole;

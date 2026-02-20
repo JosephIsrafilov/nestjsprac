@@ -6,8 +6,8 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { CurrentUserData } from '../auth/current-user.decorator';
-import type { CurrentUser } from '../auth/auth.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthUser } from '../auth/auth.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { USER_ROLE } from '../common/constants';
 import { CreateUserDto } from './users.dto';
@@ -19,10 +19,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(
-    @Body() dto: CreateUserDto,
-    @CurrentUserData() currentUser: CurrentUser,
-  ) {
+  create(@Body() dto: CreateUserDto, @CurrentUser() currentUser: AuthUser) {
     if (currentUser.role !== USER_ROLE.admin) {
       throw new ForbiddenException('Only admin can create users');
     }

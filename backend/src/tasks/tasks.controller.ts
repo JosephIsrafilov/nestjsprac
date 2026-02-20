@@ -9,8 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { CurrentUser } from '../auth/auth.dto';
-import { CurrentUserData } from '../auth/current-user.decorator';
+import type { AuthUser } from '../auth/auth.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateTaskDto, ListTasksQueryDto, UpdateTaskDto } from './tasks.dto';
 import { TasksService } from './tasks.service';
@@ -21,10 +21,7 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  create(
-    @Body() dto: CreateTaskDto,
-    @CurrentUserData() currentUser: CurrentUser,
-  ) {
+  create(@Body() dto: CreateTaskDto, @CurrentUser() currentUser: AuthUser) {
     return this.tasksService.create(dto, currentUser);
   }
 
@@ -37,7 +34,7 @@ export class TasksController {
   update(
     @Param('id', ParseIntPipe) taskId: number,
     @Body() dto: UpdateTaskDto,
-    @CurrentUserData() currentUser: CurrentUser,
+    @CurrentUser() currentUser: AuthUser,
   ) {
     return this.tasksService.update(taskId, dto, currentUser);
   }
