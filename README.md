@@ -1,24 +1,20 @@
-# Task Manager
+## Stack
 
-Just a simple task tracking app built with NestJS and Prisma. Nothing fancy, works with the UI in the parent folder.
+- NestJS
+- Prisma
+- PostgreSQL
+- Plain HTML UI in `ui/`
 
-## What's inside
+## Run on Ubuntu
 
-- NestJS for the backend stuff
-- Prisma talking to PostgreSQL
-- JWT for auth
-- Pretty basic project/task management
-
-## Getting it running on Ubuntu
-
-You'll need Node.js and PostgreSQL installed. Then set up your database:
+1. Create DB/user (one time):
 
 ```bash
 sudo -u postgres psql -c "CREATE USER task_user WITH PASSWORD 'task_pass';"
 sudo -u postgres psql -c "CREATE DATABASE task_db OWNER task_user;"
 ```
 
-Make a `.env` file in the backend folder:
+2. Create `backend/.env`:
 
 ```env
 DATABASE_URL="postgresql://task_user:task_pass@127.0.0.1:5432/task_db?schema=public"
@@ -26,7 +22,7 @@ JWT_SECRET="dev_super_secret_change_me"
 PORT="3000"
 ```
 
-Then:
+3. Start backend:
 
 ```bash
 cd backend
@@ -35,26 +31,27 @@ npx prisma migrate dev --name init
 npm run prisma:seed
 npm run start:dev
 ```
-Go to `http://localhost:3000/` and you see Swagger
-Go to `http://localhost:3000/ui` and you able to work with ui
 
-## Login
+## Open
 
-Default account is admin@example.com / admin123
+- API root: `http://127.0.0.1:3000/`
+- UI: `http://127.0.0.1:3000/ui`
 
-## The API
+## Default login
 
-Main endpoints:
+- `admin@example.com`
+- `admin123`
 
-- POST /auth/login - get your token
-- GET /auth/me - check who you are
-- POST /users - create users (admins only)
-- GET /users - list everyone
-- POST /projects - make a project
-- GET /projects - see all projects
-- POST /tasks - create a task
-- GET /tasks - list tasks (can filter by status, assigned_to, dates, or search)
-- PATCH /tasks/:id - update a task
-- GET /tasks/:id/activity - see what changed
-- GET /dashboard - some stats
+## Main endpoints
 
+- `POST /auth/login`
+- `GET /auth/me`
+- `POST /users`
+- `GET /users`
+- `POST /projects`
+- `GET /projects`
+- `POST /tasks`
+- `GET /tasks`
+- `PATCH /tasks/:id`
+- `GET /tasks/:id/activity`
+- `GET /dashboard`

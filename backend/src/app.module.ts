@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { existsSync } from 'fs';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
@@ -13,9 +12,7 @@ import { UsersModule } from './users/users.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: existsSync(join(__dirname, '..', '..', 'ui'))
-        ? join(__dirname, '..', '..', 'ui')
-        : join(__dirname, '..', '..', '..', 'ui'),
+      rootPath: join(process.cwd(), '..', 'ui'),
       serveRoot: '/ui',
     }),
     PrismaModule,
