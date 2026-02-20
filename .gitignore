@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# IDE
+.vscode/
+
+# Build output
+backend/dist/
+**/*.tsbuildinfo
+
+# Local env files
+*.env
+backend/.env
