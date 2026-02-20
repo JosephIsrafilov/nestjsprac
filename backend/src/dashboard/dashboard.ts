@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Controller, Get, Injectable, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -49,5 +50,16 @@ export class DashboardService {
         count: item._count._all,
       })),
     };
+  }
+}
+
+@Controller('dashboard')
+@UseGuards(JwtAuthGuard)
+export class DashboardController {
+  constructor(private readonly dashboardService: DashboardService) {}
+
+  @Get()
+  getSummary() {
+    return this.dashboardService.getSummary();
   }
 }

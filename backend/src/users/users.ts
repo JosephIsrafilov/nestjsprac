@@ -1,6 +1,19 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Injectable,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthUser } from '../auth/auth.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { USER_ROLE } from '../common/constants';
 import type { UserRole } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './users.dto';
@@ -43,7 +56,7 @@ export class UsersService {
 
   async findAll(): Promise<PublicUser[]> {
     const users = await this.prisma.user.findMany({ orderBy: { id: 'asc' } });
-    return users.map((u) => this.mapToPublicUser(u));
+    return users.map((user) => this.mapToPublicUser(user));
   }
 
   findByEmail(email: string): Promise<User | null> {
@@ -61,5 +74,25 @@ export class UsersService {
       email: user.email,
       role: user.role,
     };
+  }
+}
+
+@Controller('users')
+@UseGuards(JwtAuthGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  create(@Body() dto: CreateUserDto, @CurrentUser() currentUser: AuthUser) {
+    if (currentUser.role !== USER_ROLE.admin) {
+      throw new ForbiddenException('Only admin can create users');
+    }
+
+    return this.usersService.create(dto);
+  }
+
+  @Get()
+  list() {
+    return this.usersService.findAll();
   }
 }
