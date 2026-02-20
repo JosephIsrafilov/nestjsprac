@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task API Simple Frontend</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <h1>Task API Test Page</h1>
+    <p class="small">
+      Default admin: <b>admin@example.com</b> / <b>admin123</b>
+    </p>
+
+    <div id="statusBox">Not authenticated yet.</div>
+    <div id="errorBox"></div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Step 0. Base settings</h2>
+
+        <label for="baseUrl">Base URL</label>
+        <input id="baseUrl" placeholder="http://127.0.0.1:8000" />
+
+        <label for="tokenInput">JWT token (optional manual paste)</label>
+        <input id="tokenInput" placeholder="Paste token here" />
+
+        <button onclick="saveToken()">Save token manually</button>
+        <button onclick="authMe()">Check current user (auth/me)</button>
+
+        <p id="savedState" class="small"></p>
+      </div>
+
+      <div class="card">
+        <h2>Step 1. Login</h2>
+
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" value="admin@example.com" />
+
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" value="admin123" />
+
+        <button onclick="login()">Login</button>
+      </div>
+
+      <div class="card">
+        <h2>Step 2. Create user (admin only)</h2>
+
+        <label for="memberName">Name</label>
+        <input id="memberName" value="Member One" />
+
+        <label for="memberEmail">Email</label>
+        <input id="memberEmail" value="member1@example.com" />
+
+        <label for="memberPassword">Password</label>
+        <input id="memberPassword" type="password" value="pass123" />
+
+        <label for="memberRole">Role</label>
+        <select id="memberRole">
+          <option value="member">member</option>
+          <option value="admin">admin</option>
+        </select>
+
+        <button onclick="createUser()">Create user</button>
+      </div>
+
+      <div class="card">
+        <h2>Step 3. Create project</h2>
+
+        <label for="projectName">Project name</label>
+        <input id="projectName" value="My Project" />
+
+        <label for="projectDesc">Description</label>
+        <input id="projectDesc" value="Simple project" />
+
+        <button onclick="createProject()">Create project</button>
+      </div>
+
+      <div class="card">
+        <h2>Step 4. Create task</h2>
+        <p class="small">
+          Rule: member can create task only in own project. Admin can create
+          anywhere.
+        </p>
+
+        <label for="taskTitle">Title</label>
+        <input id="taskTitle" value="First task" />
+
+        <label for="taskDesc">Description</label>
+        <input id="taskDesc" value="Task from simple frontend" />
+
+        <label for="taskStatus">Status</label>
+        <select id="taskStatus">
+          <option value="todo">todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="review">review</option>
+          <option value="done">done</option>
+        </select>
+
+        <label for="taskPriority">Priority</label>
+        <select id="taskPriority">
+          <option value="low">low</option>
+          <option value="medium" selected>medium</option>
+          <option value="high">high</option>
+        </select>
+
+        <label for="taskProjectId">Project ID</label>
+        <input id="taskProjectId" placeholder="Example: 1" />
+
+        <label for="taskAssignedTo">Assign to user ID</label>
+        <input id="taskAssignedTo" placeholder="Example: 2" />
+
+        <label for="taskDueDate">Due date (optional, YYYY-MM-DD)</label>
+        <input id="taskDueDate" placeholder="2026-03-10" />
+
+        <button onclick="createTask()">Create task</button>
+      </div>
+
+      <div class="card">
+        <h2>Step 5. Update task status</h2>
+
+        <label for="updateTaskId">Task ID</label>
+        <input id="updateTaskId" placeholder="Example: 1" />
+
+        <label for="updateStatus">New status</label>
+        <select id="updateStatus">
+          <option value="todo">todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="review">review</option>
+          <option value="done">done</option>
+        </select>
+
+        <button onclick="updateTaskStatus()">Update status</button>
+      </div>
+
+      <div class="card">
+        <h2>Read data</h2>
+        <button onclick="listUsers()">List users</button>
+        <button onclick="listProjects()">List projects</button>
+        <button onclick="listTasks()">List tasks</button>
+
+        <label for="activityTaskId">Task ID for activity</label>
+        <input id="activityTaskId" placeholder="Example: 1" />
+        <button onclick="taskActivity()">Task activity</button>
+
+        <button onclick="dashboard()">Dashboard</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Response</h2>
+      <div id="result">Ready.</div>
+    </div>
+
+    <script>
+      const state = {
+        token: localStorage.getItem("jwt_token") || "",
+        memberId: localStorage.getItem("member_id") || "",
+        projectId: localStorage.getItem("project_id") || "",
+        taskId: localStorage.getItem("task_id") || "",
+        userEmail: "",
+        userRole: "",
+      };
+
+      const baseUrlInput = document.getElementById("baseUrl");
+      const tokenInput = document.getElementById("tokenInput");
+      const statusBox = document.getElementById("statusBox");
+      const errorBox = document.getElementById("errorBox");
+
+      baseUrlInput.value =
+        localStorage.getItem("base_url") || window.location.origin;
+      tokenInput.value = state.token;
+
+      function setError(message) {
+        if (!message) {
+          errorBox.style.display = "none";
+          errorBox.textContent = "";
+          return;
+        }
+        errorBox.style.display = "block";
+        errorBox.textContent = message;
+      }
+
+      function refreshSavedState() {
+        if (state.projectId)
+          document.getElementById("taskProjectId").value = state.projectId;
+        if (state.memberId)
+          document.getElementById("taskAssignedTo").value = state.memberId;
+        if (state.taskId) {
+          document.getElementById("updateTaskId").value = state.taskId;
+          document.getElementById("activityTaskId").value = state.taskId;
+        }
+
+        document.getElementById("savedState").textContent =
+          "saved: token=" +
+          (state.token ? "yes" : "no") +
+          ", member_id=" +
+          (state.memberId || "-") +
+          ", project_id=" +
+          (state.projectId || "-") +
+          ", task_id=" +
+          (state.taskId || "-");
+
+        if (state.userEmail) {
+          statusBox.textContent =
+            "Current user: " +
+            state.userEmail +
+            " (role: " +
+            state.userRole +
+            ")";
+        } else {
+          statusBox.textContent = state.token
+            ? "Token saved. Click 'Check current user'."
+            : "Not authenticated yet.";
+        }
+      }
+
+      function show(data, statusCode, url) {
+        document.getElementById("result").textContent =
+          "Status: " +
+          statusCode +
+          "\nURL: " +
+          url +
+          "\n\n" +
+          JSON.stringify(data, null, 2);
+      }
+
+      async function api(method, path, body, useAuth = true) {
+        const base = baseUrlInput.value.trim().replace(/\/$/, "");
+        localStorage.setItem("base_url", base);
+
+        const headers = { "Content-Type": "application/json" };
+        if (useAuth && state.token)
+          headers.Authorization = "Bearer " + state.token;
+
+        const response = await fetch(base + path, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : null,
+        });
+
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          data = { message: "No JSON" };
+        }
+
+        show(data, response.status, base + path);
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+        return data;
+      }
+
+      function saveToken() {
+        state.token = tokenInput.value.trim();
+        localStorage.setItem("jwt_token", state.token);
+        state.userEmail = "";
+        state.userRole = "";
+        setError("");
+        refreshSavedState();
+      }
+
+      async function login() {
+        try {
+          setError("");
+          const data = await api(
+            "POST",
+            "/auth/login",
+            {
+              email: document.getElementById("loginEmail").value,
+              password: document.getElementById("loginPassword").value,
+            },
+            false,
+          );
+          state.token = data.access_token;
+          localStorage.setItem("jwt_token", state.token);
+          tokenInput.value = state.token;
+          await authMe();
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function authMe() {
+        try {
+          setError("");
+          const me = await api("GET", "/auth/me");
+          state.userEmail = me.email;
+          state.userRole = me.role;
+          refreshSavedState();
+        } catch (e) {
+          state.userEmail = "";
+          state.userRole = "";
+          refreshSavedState();
+          setError(e.message);
+        }
+      }
+
+      async function createUser() {
+        try {
+          setError("");
+          const data = await api("POST", "/users", {
+            name: document.getElementById("memberName").value,
+            email: document.getElementById("memberEmail").value,
+            password: document.getElementById("memberPassword").value,
+            role: document.getElementById("memberRole").value,
+          });
+          state.memberId = String(data.id);
+          localStorage.setItem("member_id", state.memberId);
+          refreshSavedState();
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function createProject() {
+        try {
+          setError("");
+          const data = await api("POST", "/projects", {
+            name: document.getElementById("projectName").value,
+            description: document.getElementById("projectDesc").value,
+          });
+          state.projectId = String(data.id);
+          localStorage.setItem("project_id", state.projectId);
+          refreshSavedState();
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      function readPositiveInt(inputId, fieldName) {
+        const raw = document.getElementById(inputId).value.trim();
+        const value = Number(raw);
+        if (
+          !raw ||
+          Number.isNaN(value) ||
+          value <= 0 ||
+          !Number.isInteger(value)
+        ) {
+          throw new Error(fieldName + " must be a positive integer");
+        }
+        return value;
+      }
+
+      async function createTask() {
+        try {
+          setError("");
+
+          const projectId = readPositiveInt("taskProjectId", "Project ID");
+          const assignedTo = readPositiveInt(
+            "taskAssignedTo",
+            "Assign to user ID",
+          );
+
+          const dueDate = document.getElementById("taskDueDate").value.trim();
+          if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+            throw new Error("Due date must be in YYYY-MM-DD format");
+          }
+
+          const payload = {
+            title: document.getElementById("taskTitle").value,
+            description: document.getElementById("taskDesc").value,
+            status: document.getElementById("taskStatus").value,
+            priority: document.getElementById("taskPriority").value,
+            project_id: projectId,
+            assigned_to: assignedTo,
+          };
+          if (dueDate) payload.due_date = dueDate;
+
+          const data = await api("POST", "/tasks", payload);
+          state.taskId = String(data.id);
+          localStorage.setItem("task_id", state.taskId);
+          refreshSavedState();
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function updateTaskStatus() {
+        try {
+          setError("");
+          const taskId = readPositiveInt("updateTaskId", "Task ID");
+          await api("PATCH", "/tasks/" + taskId, {
+            status: document.getElementById("updateStatus").value,
+          });
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function listUsers() {
+        try {
+          setError("");
+          await api("GET", "/users");
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function listProjects() {
+        try {
+          setError("");
+          await api("GET", "/projects");
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function listTasks() {
+        try {
+          setError("");
+          await api("GET", "/tasks");
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function taskActivity() {
+        try {
+          setError("");
+          const taskId = readPositiveInt(
+            "activityTaskId",
+            "Task ID for activity",
+          );
+          await api("GET", "/tasks/" + taskId + "/activity");
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      async function dashboard() {
+        try {
+          setError("");
+          await api("GET", "/dashboard");
+        } catch (e) {
+          setError(e.message);
+        }
+      }
+
+      refreshSavedState();
+    </script>
+  </body>
+</html>
