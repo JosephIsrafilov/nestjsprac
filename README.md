@@ -26,7 +26,7 @@ JWT_SECRET="dev_super_secret_change_me"
 PORT="3000"
 ```
 
-Then just:
+Then:
 
 ```bash
 cd backend
@@ -35,8 +35,8 @@ npx prisma migrate dev --name init
 npm run prisma:seed
 npm run start:dev
 ```
-
-Go to `http://localhost:3000/ui` and you're good to go.
+Go to `http://localhost:3000/` and you see Swagger
+Go to `http://localhost:3000/ui` and you able to work with ui
 
 ## Login
 
@@ -58,10 +58,3 @@ Main endpoints:
 - GET /tasks/:id/activity - see what changed
 - GET /dashboard - some stats
 
-## How it works
-
-Users can be admins or members. Members can only mess with tasks in their own projects. Once a task is marked done, you can't change it back. The app tracks changes automatically when you update tasks.
-
-## Notes
-
-The UI expects snake_case (project_id, assigned_to, due_date) so that's what we're using in the API.
