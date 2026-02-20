@@ -63,42 +63,33 @@ let UsersService = class UsersService {
                     role: dto.role,
                 },
             });
-            return this.toPublicUser(user);
+            return this.mapToPublicUser(user);
         }
         catch (error) {
-            if (this.isPrismaUniqueError(error)) {
+            if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2002') {
                 throw new common_1.BadRequestException('Email is already in use');
             }
             throw error;
         }
     }
     async findAll() {
-        const users = await this.prisma.user.findMany({
-            orderBy: { id: 'asc' },
-        });
-        return users.map((user) => this.toPublicUser(user));
+        const users = await this.prisma.user.findMany({ orderBy: { id: 'asc' } });
+        return users.map((u) => this.mapToPublicUser(u));
     }
     findByEmail(email) {
-        return this.prisma.user.findUnique({
-            where: { email },
-        });
+        return this.prisma.user.findUnique({ where: { email } });
     }
     findById(id) {
-        return this.prisma.user.findUnique({
-            where: { id },
-        });
+        return this.prisma.user.findUnique({ where: { id } });
     }
-    toPublicUser(user) {
+    mapToPublicUser(user) {
         return {
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
         };
-    }
-    isPrismaUniqueError(error) {
-        return (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2002');
     }
 };
 exports.UsersService = UsersService;

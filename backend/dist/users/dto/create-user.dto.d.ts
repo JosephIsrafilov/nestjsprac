@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client';
+import type { UserRole } from '../../common/constants';
 export declare class CreateUserDto {
     name: string;
     email: string;

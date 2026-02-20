@@ -1,4 +1,4 @@
-import { TaskPriority, TaskStatus } from '@prisma/client';
+import type { TaskPriority, TaskStatus } from '../../common/constants';
 export declare class CreateTaskDto {
     title: string;
     description: string;

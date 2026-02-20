@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, TaskActionType, TaskStatus, UserRole } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { CurrentUserType } from '../auth/types/current-user.type';
+import { TASK_ACTION_TYPE, TASK_STATUS, USER_ROLE } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
@@ -21,7 +22,7 @@ export class TasksService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project was not found');
+      throw new NotFoundException('Project not found');
     }
 
     const assignee = await this.prisma.user.findUnique({
@@ -29,15 +30,15 @@ export class TasksService {
     });
 
     if (!assignee) {
-      throw new NotFoundException('Assigned user was not found');
+      throw new NotFoundException('User not found');
     }
 
     if (
-      currentUser.role === UserRole.member &&
+      currentUser.role === USER_ROLE.member &&
       project.createdBy !== currentUser.id
     ) {
       throw new ForbiddenException(
-        'Members can only create tasks in their own projects',
+        'You can only create tasks in your own projects',
       );
     }
 
@@ -49,7 +50,9 @@ export class TasksService {
         priority: dto.priority,
         projectId: dto.project_id,
         assignedTo: dto.assigned_to,
-        dueDate: dto.due_date ? new Date(dto.due_date) : null,
+        dueDate: dto.due_date
+          ? this.parseDateOnly(dto.due_date, 'due_date')
+          : null,
       },
     });
   }
@@ -67,12 +70,15 @@ export class TasksService {
 
     if (query.due_from || query.due_to) {
       const dueDateFilter: Prisma.DateTimeNullableFilter = {};
+
       if (query.due_from) {
-        dueDateFilter.gte = new Date(query.due_from);
+        dueDateFilter.gte = this.parseDateOnly(query.due_from, 'due_from');
       }
+
       if (query.due_to) {
-        dueDateFilter.lte = new Date(query.due_to);
+        dueDateFilter.lte = this.parseDateOnly(query.due_to, 'due_to');
       }
+
       where.dueDate = dueDateFilter;
     }
 
@@ -104,7 +110,7 @@ export class TasksService {
     dto: UpdateTaskDto,
     currentUser: CurrentUserType,
   ) {
-    const existingTask = await this.prisma.task.findUnique({
+    const task = await this.prisma.task.findUnique({
       where: { id: taskId },
       include: {
         project: {
@@ -115,40 +121,38 @@ export class TasksService {
       },
     });
 
-    if (!existingTask) {
-      throw new NotFoundException('Task was not found');
+    if (!task) {
+      throw new NotFoundException('Task not found');
     }
 
     if (
-      currentUser.role === UserRole.member &&
-      existingTask.project.createdBy !== currentUser.id
+      currentUser.role === USER_ROLE.member &&
+      task.project.createdBy !== currentUser.id
     ) {
       throw new ForbiddenException(
-        'Members can only update tasks in their own projects',
+        'You can only update tasks in your own projects',
       );
     }
 
     if (
       dto.status &&
-      existingTask.status === TaskStatus.done &&
-      dto.status !== TaskStatus.done
+      task.status === TASK_STATUS.done &&
+      dto.status !== TASK_STATUS.done
     ) {
-      throw new BadRequestException(
-        'Task status cannot move from done to another state',
-      );
+      throw new BadRequestException("Can't change a task back from done");
     }
 
-    if (dto.project_id && dto.project_id !== existingTask.projectId) {
-      throw new BadRequestException('Changing project_id is not allowed');
+    if (dto.project_id && dto.project_id !== task.projectId) {
+      throw new BadRequestException('Cannot move task to another project');
     }
 
     if (dto.assigned_to) {
-      const newAssignee = await this.prisma.user.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: { id: dto.assigned_to },
       });
 
-      if (!newAssignee) {
-        throw new NotFoundException('Assigned user was not found');
+      if (!user) {
+        throw new NotFoundException('User not found');
       }
     }
 
@@ -177,46 +181,43 @@ export class TasksService {
     }
 
     if (dto.due_date !== undefined) {
-      updateData.dueDate = new Date(dto.due_date);
+      updateData.dueDate = this.parseDateOnly(dto.due_date, 'due_date');
     }
 
     const activities: Prisma.TaskActivityCreateManyInput[] = [];
 
-    if (dto.status !== undefined && dto.status !== existingTask.status) {
+    if (dto.status !== undefined && dto.status !== task.status) {
       activities.push({
         taskId,
-        actionType: TaskActionType.status_changed,
-        oldValue: existingTask.status,
+        actionType: TASK_ACTION_TYPE.status_changed,
+        oldValue: task.status,
         newValue: dto.status,
         changedBy: currentUser.id,
       });
     }
 
-    if (
-      dto.assigned_to !== undefined &&
-      dto.assigned_to !== existingTask.assignedTo
-    ) {
+    if (dto.assigned_to !== undefined && dto.assigned_to !== task.assignedTo) {
       activities.push({
         taskId,
-        actionType: TaskActionType.reassigned,
-        oldValue: String(existingTask.assignedTo),
+        actionType: TASK_ACTION_TYPE.reassigned,
+        oldValue: String(task.assignedTo),
         newValue: String(dto.assigned_to),
         changedBy: currentUser.id,
       });
     }
 
-    if (dto.title !== undefined && dto.title !== existingTask.title) {
+    if (dto.title !== undefined && dto.title !== task.title) {
       activities.push({
         taskId,
-        actionType: TaskActionType.edited,
-        oldValue: existingTask.title,
+        actionType: TASK_ACTION_TYPE.edited,
+        oldValue: task.title,
         newValue: dto.title,
         changedBy: currentUser.id,
       });
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updatedTask = await tx.task.update({
+      const updated = await tx.task.update({
         where: { id: taskId },
         data: updateData,
       });
@@ -227,7 +228,7 @@ export class TasksService {
         });
       }
 
-      return updatedTask;
+      return updated;
     });
   }
 
@@ -238,12 +239,37 @@ export class TasksService {
     });
 
     if (!task) {
-      throw new NotFoundException('Task was not found');
+      throw new NotFoundException('Task not found');
     }
 
     return this.prisma.taskActivity.findMany({
       where: { taskId },
       orderBy: { timestamp: 'desc' },
     });
+  }
+
+  private parseDateOnly(value: string, fieldName: string): Date {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new BadRequestException(`${fieldName} must be YYYY-MM-DD format`);
+    }
+
+    const [yearPart, monthPart, dayPart] = value.split('-');
+    const year = Number(yearPart);
+    const month = Number(monthPart);
+    const day = Number(dayPart);
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const isValid =
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() + 1 === month &&
+      date.getUTCDate() === day;
+
+    if (!isValid) {
+      throw new BadRequestException(
+        `${fieldName} is not a valid calendar date`,
+      );
+    }
+
+    return date;
   }
 }

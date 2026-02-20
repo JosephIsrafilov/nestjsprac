@@ -22,7 +22,7 @@ async function main() {
     },
   });
 
-  console.log('Seed complete: admin@example.com / admin123');
+  console.log('Done! Login with admin@example.com / admin123');
 }
 
 main()

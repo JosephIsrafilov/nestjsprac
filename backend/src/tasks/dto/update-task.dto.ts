@@ -1,13 +1,14 @@
-import { TaskPriority, TaskStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
-  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   Min,
 } from 'class-validator';
+import { TASK_PRIORITY, TASK_STATUS } from '../../common/constants';
+import type { TaskPriority, TaskStatus } from '../../common/constants';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -19,11 +20,11 @@ export class UpdateTaskDto {
   description?: string;
 
   @IsOptional()
-  @IsEnum(TaskStatus)
+  @IsEnum(TASK_STATUS)
   status?: TaskStatus;
 
   @IsOptional()
-  @IsEnum(TaskPriority)
+  @IsEnum(TASK_PRIORITY)
   priority?: TaskPriority;
 
   @IsOptional()
@@ -39,6 +40,8 @@ export class UpdateTaskDto {
   assigned_to?: number;
 
   @IsOptional()
-  @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'due_date must be YYYY-MM-DD format',
+  })
   due_date?: string;
 }

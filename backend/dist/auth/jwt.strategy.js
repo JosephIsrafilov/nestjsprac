@@ -23,7 +23,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
     }
     validate(payload) {
         if (!payload.sub || !payload.email || !payload.role) {
-            throw new common_1.UnauthorizedException('Invalid auth token payload');
+            throw new common_1.UnauthorizedException('Invalid token');
         }
         return {
             id: payload.sub,

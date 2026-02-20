@@ -1,27 +1,24 @@
-# Project & Task Management Backend (NestJS)
+# Task Manager
 
-Simple NestJS + Prisma backend for the assignment, using your existing `../ui` frontend and serving it at `/ui`.
+Just a simple task tracking app built with NestJS and Prisma. Nothing fancy, works with the UI in the parent folder.
 
-## Stack
-- NestJS
-- Prisma ORM
-- PostgreSQL
-- JWT auth
+## What's inside
 
-## Ubuntu Prerequisites
+- NestJS for the backend stuff
+- Prisma talking to PostgreSQL
+- JWT for auth
+- Pretty basic project/task management
 
-1. Install Node.js (recommended via nvm) and npm.
-2. Install PostgreSQL server/client.
-3. Create DB and user:
+## Getting it running on Ubuntu
+
+You'll need Node.js and PostgreSQL installed. Then set up your database:
 
 ```bash
 sudo -u postgres psql -c "CREATE USER task_user WITH PASSWORD 'task_pass';"
 sudo -u postgres psql -c "CREATE DATABASE task_db OWNER task_user;"
 ```
 
-## Environment
-
-Create/update `backend/.env`:
+Make a `.env` file in the backend folder:
 
 ```env
 DATABASE_URL="postgresql://task_user:task_pass@127.0.0.1:5432/task_db?schema=public"
@@ -29,7 +26,7 @@ JWT_SECRET="dev_super_secret_change_me"
 PORT="3000"
 ```
 
-## Install and Run
+Then just:
 
 ```bash
 cd backend
@@ -39,33 +36,32 @@ npm run prisma:seed
 npm run start:dev
 ```
 
-Open:
-- UI: `http://127.0.0.1:3000/ui`
-- API root: `http://127.0.0.1:3000`
+Go to `http://localhost:3000/ui` and you're good to go.
 
-## Auth Defaults
-- Email: `admin@example.com`
-- Password: `admin123`
+## Login
 
-## API Routes
-- `POST /auth/login`
-- `GET /auth/me`
-- `POST /users` (admin only)
-- `GET /users`
-- `POST /projects`
-- `GET /projects`
-- `POST /tasks`
-- `GET /tasks` (supports filters: `status`, `assigned_to`, `due_from`, `due_to`, `search`)
-- `PATCH /tasks/:id`
-- `GET /tasks/:id/activity`
-- `GET /dashboard`
+Default account is admin@example.com / admin123
 
-## Assignment rules implemented
-- Relational models: users, projects, tasks, task activity.
-- Task status rule: no transition from `done` back to other states.
-- Auto activity logs on task `status`, `assigned_to`, `title` changes.
-- Member can create/update task only inside projects they created.
-- Clear validation and error messages.
+## The API
+
+Main endpoints:
+
+- POST /auth/login - get your token
+- GET /auth/me - check who you are
+- POST /users - create users (admins only)
+- GET /users - list everyone
+- POST /projects - make a project
+- GET /projects - see all projects
+- POST /tasks - create a task
+- GET /tasks - list tasks (can filter by status, assigned_to, dates, or search)
+- PATCH /tasks/:id - update a task
+- GET /tasks/:id/activity - see what changed
+- GET /dashboard - some stats
+
+## How it works
+
+Users can be admins or members. Members can only mess with tasks in their own projects. Once a task is marked done, you can't change it back. The app tracks changes automatically when you update tasks.
 
 ## Notes
-- Task payload uses snake_case fields expected by `ui/index.html`: `project_id`, `assigned_to`, `due_date`.
+
+The UI expects snake_case (project_id, assigned_to, due_date) so that's what we're using in the API.

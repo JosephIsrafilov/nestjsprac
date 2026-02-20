@@ -1,4 +1,4 @@
-import { TaskStatus } from '@prisma/client';
+import type { TaskStatus } from '../../common/constants';
 export declare class ListTasksQueryDto {
     status?: TaskStatus;
     assigned_to?: number;

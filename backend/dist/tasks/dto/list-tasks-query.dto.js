@@ -10,9 +10,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ListTasksQueryDto = void 0;
-const client_1 = require("@prisma/client");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const constants_1 = require("../../common/constants");
 class ListTasksQueryDto {
     status;
     assigned_to;
@@ -23,7 +23,7 @@ class ListTasksQueryDto {
 exports.ListTasksQueryDto = ListTasksQueryDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(client_1.TaskStatus),
+    (0, class_validator_1.IsEnum)(constants_1.TASK_STATUS),
     __metadata("design:type", String)
 ], ListTasksQueryDto.prototype, "status", void 0);
 __decorate([
@@ -35,12 +35,16 @@ __decorate([
 ], ListTasksQueryDto.prototype, "assigned_to", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.Matches)(/^\d{4}-\d{2}-\d{2}$/, {
+        message: 'due_from must be in YYYY-MM-DD format',
+    }),
     __metadata("design:type", String)
 ], ListTasksQueryDto.prototype, "due_from", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.Matches)(/^\d{4}-\d{2}-\d{2}$/, {
+        message: 'due_to must be in YYYY-MM-DD format',
+    }),
     __metadata("design:type", String)
 ], ListTasksQueryDto.prototype, "due_to", void 0);
 __decorate([

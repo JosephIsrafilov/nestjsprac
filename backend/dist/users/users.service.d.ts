@@ -1,23 +1,20 @@
-import { User, UserRole } from '@prisma/client';
+import { User } from '@prisma/client';
+import type { UserRole } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+type PublicUser = {
+    id: number;
+    name: string;
+    email: string;
+    role: UserRole;
+};
 export declare class UsersService {
     private readonly prisma;
     constructor(prisma: PrismaService);
-    create(dto: CreateUserDto): Promise<{
-        id: number;
-        name: string;
-        email: string;
-        role: UserRole;
-    }>;
-    findAll(): Promise<Array<{
-        id: number;
-        name: string;
-        email: string;
-        role: UserRole;
-    }>>;
+    create(dto: CreateUserDto): Promise<PublicUser>;
+    findAll(): Promise<PublicUser[]>;
     findByEmail(email: string): Promise<User | null>;
     findById(id: number): Promise<User | null>;
-    private toPublicUser;
-    private isPrismaUniqueError;
+    private mapToPublicUser;
 }
+export {};

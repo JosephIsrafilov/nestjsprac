@@ -1,5 +1,5 @@
-import { UserRole } from '@prisma/client';
 import { Strategy } from 'passport-jwt';
+import type { UserRole } from '../common/constants';
 import { CurrentUserType } from './types/current-user.type';
 type JwtPayload = {
     sub: number;

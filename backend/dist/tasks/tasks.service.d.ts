@@ -52,4 +52,5 @@ export declare class TasksService {
         changedBy: number;
         timestamp: Date;
     }[]>;
+    private parseDateOnly;
 }

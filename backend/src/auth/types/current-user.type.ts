@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client';
+import type { UserRole } from '../../common/constants';
 
 export type CurrentUserType = {
   id: number;

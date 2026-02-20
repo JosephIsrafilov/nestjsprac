@@ -57,11 +57,11 @@ let AuthService = class AuthService {
     async login(dto) {
         const user = await this.usersService.findByEmail(dto.email);
         if (!user) {
-            throw new common_1.UnauthorizedException('Invalid email or password');
+            throw new common_1.UnauthorizedException('Wrong email or password');
         }
-        const passwordOk = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!passwordOk) {
-            throw new common_1.UnauthorizedException('Invalid email or password');
+        const validPassword = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!validPassword) {
+            throw new common_1.UnauthorizedException('Wrong email or password');
         }
         const payload = {
             sub: user.id,
@@ -75,7 +75,7 @@ let AuthService = class AuthService {
     async me(currentUser) {
         const user = await this.usersService.findById(currentUser.id);
         if (!user) {
-            throw new common_1.UnauthorizedException('User from token was not found');
+            throw new common_1.UnauthorizedException('User not found');
         }
         return {
             id: user.id,

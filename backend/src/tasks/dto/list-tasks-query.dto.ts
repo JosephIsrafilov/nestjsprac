@@ -1,17 +1,18 @@
-import { TaskStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
-  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   Min,
 } from 'class-validator';
+import { TASK_STATUS } from '../../common/constants';
+import type { TaskStatus } from '../../common/constants';
 
 export class ListTasksQueryDto {
   @IsOptional()
-  @IsEnum(TaskStatus)
+  @IsEnum(TASK_STATUS)
   status?: TaskStatus;
 
   @IsOptional()
@@ -21,11 +22,15 @@ export class ListTasksQueryDto {
   assigned_to?: number;
 
   @IsOptional()
-  @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'due_from must be in YYYY-MM-DD format',
+  })
   due_from?: string;
 
   @IsOptional()
-  @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'due_to must be in YYYY-MM-DD format',
+  })
   due_to?: string;
 
   @IsOptional()

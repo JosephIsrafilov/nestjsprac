@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TasksService = void 0;
 const common_1 = require("@nestjs/common");
-const client_1 = require("@prisma/client");
+const constants_1 = require("../common/constants");
 const prisma_service_1 = require("../prisma/prisma.service");
 let TasksService = class TasksService {
     prisma;
@@ -23,17 +23,17 @@ let TasksService = class TasksService {
             where: { id: dto.project_id },
         });
         if (!project) {
-            throw new common_1.NotFoundException('Project was not found');
+            throw new common_1.NotFoundException('Project not found');
         }
         const assignee = await this.prisma.user.findUnique({
             where: { id: dto.assigned_to },
         });
         if (!assignee) {
-            throw new common_1.NotFoundException('Assigned user was not found');
+            throw new common_1.NotFoundException('User not found');
         }
-        if (currentUser.role === client_1.UserRole.member &&
+        if (currentUser.role === constants_1.USER_ROLE.member &&
             project.createdBy !== currentUser.id) {
-            throw new common_1.ForbiddenException('Members can only create tasks in their own projects');
+            throw new common_1.ForbiddenException('You can only create tasks in your own projects');
         }
         return this.prisma.task.create({
             data: {
@@ -43,7 +43,9 @@ let TasksService = class TasksService {
                 priority: dto.priority,
                 projectId: dto.project_id,
                 assignedTo: dto.assigned_to,
-                dueDate: dto.due_date ? new Date(dto.due_date) : null,
+                dueDate: dto.due_date
+                    ? this.parseDateOnly(dto.due_date, 'due_date')
+                    : null,
             },
         });
     }
@@ -58,10 +60,10 @@ let TasksService = class TasksService {
         if (query.due_from || query.due_to) {
             const dueDateFilter = {};
             if (query.due_from) {
-                dueDateFilter.gte = new Date(query.due_from);
+                dueDateFilter.gte = this.parseDateOnly(query.due_from, 'due_from');
             }
             if (query.due_to) {
-                dueDateFilter.lte = new Date(query.due_to);
+                dueDateFilter.lte = this.parseDateOnly(query.due_to, 'due_to');
             }
             where.dueDate = dueDateFilter;
         }
@@ -87,7 +89,7 @@ let TasksService = class TasksService {
         });
     }
     async update(taskId, dto, currentUser) {
-        const existingTask = await this.prisma.task.findUnique({
+        const task = await this.prisma.task.findUnique({
             where: { id: taskId },
             include: {
                 project: {
@@ -97,27 +99,27 @@ let TasksService = class TasksService {
                 },
             },
         });
-        if (!existingTask) {
-            throw new common_1.NotFoundException('Task was not found');
+        if (!task) {
+            throw new common_1.NotFoundException('Task not found');
         }
-        if (currentUser.role === client_1.UserRole.member &&
-            existingTask.project.createdBy !== currentUser.id) {
-            throw new common_1.ForbiddenException('Members can only update tasks in their own projects');
+        if (currentUser.role === constants_1.USER_ROLE.member &&
+            task.project.createdBy !== currentUser.id) {
+            throw new common_1.ForbiddenException('You can only update tasks in your own projects');
         }
         if (dto.status &&
-            existingTask.status === client_1.TaskStatus.done &&
-            dto.status !== client_1.TaskStatus.done) {
-            throw new common_1.BadRequestException('Task status cannot move from done to another state');
+            task.status === constants_1.TASK_STATUS.done &&
+            dto.status !== constants_1.TASK_STATUS.done) {
+            throw new common_1.BadRequestException("Can't change a task back from done");
         }
-        if (dto.project_id && dto.project_id !== existingTask.projectId) {
-            throw new common_1.BadRequestException('Changing project_id is not allowed');
+        if (dto.project_id && dto.project_id !== task.projectId) {
+            throw new common_1.BadRequestException('Cannot move task to another project');
         }
         if (dto.assigned_to) {
-            const newAssignee = await this.prisma.user.findUnique({
+            const user = await this.prisma.user.findUnique({
                 where: { id: dto.assigned_to },
             });
-            if (!newAssignee) {
-                throw new common_1.NotFoundException('Assigned user was not found');
+            if (!user) {
+                throw new common_1.NotFoundException('User not found');
             }
         }
         const updateData = {};
@@ -139,39 +141,38 @@ let TasksService = class TasksService {
             };
         }
         if (dto.due_date !== undefined) {
-            updateData.dueDate = new Date(dto.due_date);
+            updateData.dueDate = this.parseDateOnly(dto.due_date, 'due_date');
         }
         const activities = [];
-        if (dto.status !== undefined && dto.status !== existingTask.status) {
+        if (dto.status !== undefined && dto.status !== task.status) {
             activities.push({
                 taskId,
-                actionType: client_1.TaskActionType.status_changed,
-                oldValue: existingTask.status,
+                actionType: constants_1.TASK_ACTION_TYPE.status_changed,
+                oldValue: task.status,
                 newValue: dto.status,
                 changedBy: currentUser.id,
             });
         }
-        if (dto.assigned_to !== undefined &&
-            dto.assigned_to !== existingTask.assignedTo) {
+        if (dto.assigned_to !== undefined && dto.assigned_to !== task.assignedTo) {
             activities.push({
                 taskId,
-                actionType: client_1.TaskActionType.reassigned,
-                oldValue: String(existingTask.assignedTo),
+                actionType: constants_1.TASK_ACTION_TYPE.reassigned,
+                oldValue: String(task.assignedTo),
                 newValue: String(dto.assigned_to),
                 changedBy: currentUser.id,
             });
         }
-        if (dto.title !== undefined && dto.title !== existingTask.title) {
+        if (dto.title !== undefined && dto.title !== task.title) {
             activities.push({
                 taskId,
-                actionType: client_1.TaskActionType.edited,
-                oldValue: existingTask.title,
+                actionType: constants_1.TASK_ACTION_TYPE.edited,
+                oldValue: task.title,
                 newValue: dto.title,
                 changedBy: currentUser.id,
             });
         }
         return this.prisma.$transaction(async (tx) => {
-            const updatedTask = await tx.task.update({
+            const updated = await tx.task.update({
                 where: { id: taskId },
                 data: updateData,
             });
@@ -180,7 +181,7 @@ let TasksService = class TasksService {
                     data: activities,
                 });
             }
-            return updatedTask;
+            return updated;
         });
     }
     async getActivity(taskId) {
@@ -189,12 +190,29 @@ let TasksService = class TasksService {
             select: { id: true },
         });
         if (!task) {
-            throw new common_1.NotFoundException('Task was not found');
+            throw new common_1.NotFoundException('Task not found');
         }
         return this.prisma.taskActivity.findMany({
             where: { taskId },
             orderBy: { timestamp: 'desc' },
         });
+    }
+    parseDateOnly(value, fieldName) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            throw new common_1.BadRequestException(`${fieldName} must be YYYY-MM-DD format`);
+        }
+        const [yearPart, monthPart, dayPart] = value.split('-');
+        const year = Number(yearPart);
+        const month = Number(monthPart);
+        const day = Number(dayPart);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        const isValid = date.getUTCFullYear() === year &&
+            date.getUTCMonth() + 1 === month &&
+            date.getUTCDate() === day;
+        if (!isValid) {
+            throw new common_1.BadRequestException(`${fieldName} is not a valid calendar date`);
+        }
+        return date;
     }
 };
 exports.TasksService = TasksService;

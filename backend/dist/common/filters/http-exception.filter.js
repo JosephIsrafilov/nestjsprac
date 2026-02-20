@@ -13,7 +13,7 @@ let HttpExceptionFilter = class HttpExceptionFilter {
         const context = host.switchToHttp();
         const response = context.getResponse();
         let statusCode = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-        let detail = 'Internal server error';
+        let detail = 'Something went wrong';
         if (exception instanceof common_1.HttpException) {
             statusCode = exception.getStatus();
             const exceptionResponse = exception.getResponse();

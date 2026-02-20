@@ -10,9 +10,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateTaskDto = void 0;
-const client_1 = require("@prisma/client");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const constants_1 = require("../../common/constants");
 class CreateTaskDto {
     title;
     description;
@@ -34,11 +34,11 @@ __decorate([
     __metadata("design:type", String)
 ], CreateTaskDto.prototype, "description", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(client_1.TaskStatus),
+    (0, class_validator_1.IsEnum)(constants_1.TASK_STATUS),
     __metadata("design:type", String)
 ], CreateTaskDto.prototype, "status", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(client_1.TaskPriority),
+    (0, class_validator_1.IsEnum)(constants_1.TASK_PRIORITY),
     __metadata("design:type", String)
 ], CreateTaskDto.prototype, "priority", void 0);
 __decorate([
@@ -55,7 +55,9 @@ __decorate([
 ], CreateTaskDto.prototype, "assigned_to", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.Matches)(/^\d{4}-\d{2}-\d{2}$/, {
+        message: 'due_date must be YYYY-MM-DD format',
+    }),
     __metadata("design:type", String)
 ], CreateTaskDto.prototype, "due_date", void 0);
 //# sourceMappingURL=create-task.dto.js.map
