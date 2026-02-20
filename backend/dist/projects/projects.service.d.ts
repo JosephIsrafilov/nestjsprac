@@ -1,5 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProjectDto } from './dto/create-project.dto';
+import { CreateProjectDto } from './projects.dto';
 export declare class ProjectsService {
     private readonly prisma;
     constructor(prisma: PrismaService);

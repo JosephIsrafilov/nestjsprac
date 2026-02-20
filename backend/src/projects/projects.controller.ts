@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import type { CurrentUserType } from '../auth/types/current-user.type';
-import { CreateProjectDto } from './dto/create-project.dto';
+import type { CurrentUser } from '../auth/auth.dto';
+import { CurrentUserData } from '../auth/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateProjectDto } from './projects.dto';
 import { ProjectsService } from './projects.service';
 
 @Controller('projects')
@@ -13,7 +13,7 @@ export class ProjectsController {
   @Post()
   create(
     @Body() dto: CreateProjectDto,
-    @CurrentUser() currentUser: CurrentUserType,
+    @CurrentUserData() currentUser: CurrentUser,
   ) {
     return this.projectsService.create(dto, currentUser.id);
   }

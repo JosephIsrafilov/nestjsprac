@@ -1,6 +1,6 @@
 import { Strategy } from 'passport-jwt';
 import type { UserRole } from '../common/constants';
-import { CurrentUserType } from './types/current-user.type';
+import { CurrentUser } from './auth.dto';
 type JwtPayload = {
     sub: number;
     email: string;
@@ -11,6 +11,6 @@ declare const JwtStrategy_base: new (...args: [opt: import("passport-jwt").Strat
 };
 export declare class JwtStrategy extends JwtStrategy_base {
     constructor();
-    validate(payload: JwtPayload): CurrentUserType;
+    validate(payload: JwtPayload): CurrentUser;
 }
 export {};

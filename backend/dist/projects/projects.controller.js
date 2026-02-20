@@ -14,9 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsController = void 0;
 const common_1 = require("@nestjs/common");
-const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
-const create_project_dto_1 = require("./dto/create-project.dto");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const projects_dto_1 = require("./projects.dto");
 const projects_service_1 = require("./projects.service");
 let ProjectsController = class ProjectsController {
     projectsService;
@@ -34,9 +34,9 @@ exports.ProjectsController = ProjectsController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, current_user_decorator_1.CurrentUserData)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_project_dto_1.CreateProjectDto, Object]),
+    __metadata("design:paramtypes", [projects_dto_1.CreateProjectDto, Object]),
     __metadata("design:returntype", void 0)
 ], ProjectsController.prototype, "create", null);
 __decorate([

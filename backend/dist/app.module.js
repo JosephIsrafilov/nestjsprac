@@ -12,7 +12,6 @@ const serve_static_1 = require("@nestjs/serve-static");
 const fs_1 = require("fs");
 const path_1 = require("path");
 const app_controller_1 = require("./app.controller");
-const app_service_1 = require("./app.service");
 const auth_module_1 = require("./auth/auth.module");
 const dashboard_module_1 = require("./dashboard/dashboard.module");
 const prisma_module_1 = require("./prisma/prisma.module");
@@ -39,7 +38,6 @@ exports.AppModule = AppModule = __decorate([
             dashboard_module_1.DashboardModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

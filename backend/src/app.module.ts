@@ -3,7 +3,6 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -27,6 +26,5 @@ import { UsersModule } from './users/users.module';
     DashboardModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

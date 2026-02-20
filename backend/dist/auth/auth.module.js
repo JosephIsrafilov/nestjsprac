@@ -13,7 +13,7 @@ const passport_1 = require("@nestjs/passport");
 const users_module_1 = require("../users/users.module");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
-const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
+const jwt_auth_guard_1 = require("./jwt-auth.guard");
 const jwt_strategy_1 = require("./jwt.strategy");
 let AuthModule = class AuthModule {
 };

@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardController = void 0;
 const common_1 = require("@nestjs/common");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const dashboard_service_1 = require("./dashboard.service");
 let DashboardController = class DashboardController {
     dashboardService;

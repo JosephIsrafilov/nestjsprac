@@ -1,7 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
-import { CurrentUserType } from './types/current-user.type';
+import { CurrentUser, LoginDto } from './auth.dto';
 export declare class AuthService {
     private readonly usersService;
     private readonly jwtService;
@@ -9,7 +8,7 @@ export declare class AuthService {
     login(dto: LoginDto): Promise<{
         access_token: string;
     }>;
-    me(currentUser: CurrentUserType): Promise<{
+    me(currentUser: CurrentUser): Promise<{
         id: number;
         name: string;
         email: string;

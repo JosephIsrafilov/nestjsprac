@@ -14,11 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TasksController = void 0;
 const common_1 = require("@nestjs/common");
-const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
-const create_task_dto_1 = require("./dto/create-task.dto");
-const list_tasks_query_dto_1 = require("./dto/list-tasks-query.dto");
-const update_task_dto_1 = require("./dto/update-task.dto");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const tasks_dto_1 = require("./tasks.dto");
 const tasks_service_1 = require("./tasks.service");
 let TasksController = class TasksController {
     tasksService;
@@ -42,25 +40,25 @@ exports.TasksController = TasksController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, current_user_decorator_1.CurrentUserData)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_task_dto_1.CreateTaskDto, Object]),
+    __metadata("design:paramtypes", [tasks_dto_1.CreateTaskDto, Object]),
     __metadata("design:returntype", void 0)
 ], TasksController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [list_tasks_query_dto_1.ListTasksQueryDto]),
+    __metadata("design:paramtypes", [tasks_dto_1.ListTasksQueryDto]),
     __metadata("design:returntype", void 0)
 ], TasksController.prototype, "list", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, current_user_decorator_1.CurrentUserData)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, update_task_dto_1.UpdateTaskDto, Object]),
+    __metadata("design:paramtypes", [Number, tasks_dto_1.UpdateTaskDto, Object]),
     __metadata("design:returntype", void 0)
 ], TasksController.prototype, "update", null);
 __decorate([

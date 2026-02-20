@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsModule = void 0;
 const common_1 = require("@nestjs/common");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const projects_controller_1 = require("./projects.controller");
 const projects_service_1 = require("./projects.service");
 let ProjectsModule = class ProjectsModule {

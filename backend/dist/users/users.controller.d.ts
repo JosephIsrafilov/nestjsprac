@@ -1,10 +1,10 @@
-import type { CurrentUserType } from '../auth/types/current-user.type';
-import { CreateUserDto } from './dto/create-user.dto';
+import type { CurrentUser } from '../auth/auth.dto';
+import { CreateUserDto } from './users.dto';
 import { UsersService } from './users.service';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
-    create(dto: CreateUserDto, currentUser: CurrentUserType): Promise<{
+    create(dto: CreateUserDto, currentUser: CurrentUser): Promise<{
         id: number;
         name: string;
         email: string;

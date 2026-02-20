@@ -1,12 +1,10 @@
-import type { CurrentUserType } from '../auth/types/current-user.type';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
+import type { CurrentUser } from '../auth/auth.dto';
+import { CreateTaskDto, ListTasksQueryDto, UpdateTaskDto } from './tasks.dto';
 import { TasksService } from './tasks.service';
 export declare class TasksController {
     private readonly tasksService;
     constructor(tasksService: TasksService);
-    create(dto: CreateTaskDto, currentUser: CurrentUserType): Promise<{
+    create(dto: CreateTaskDto, currentUser: CurrentUser): Promise<{
         createdAt: Date;
         id: number;
         title: string;
@@ -30,7 +28,7 @@ export declare class TasksController {
         assignedTo: number;
         updatedAt: Date;
     }[]>;
-    update(taskId: number, dto: UpdateTaskDto, currentUser: CurrentUserType): Promise<{
+    update(taskId: number, dto: UpdateTaskDto, currentUser: CurrentUser): Promise<{
         createdAt: Date;
         id: number;
         title: string;

@@ -2,8 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
-import { CurrentUserType } from './types/current-user.type';
+import { CurrentUser, LoginDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +33,7 @@ export class AuthService {
     };
   }
 
-  async me(currentUser: CurrentUserType): Promise<{
+  async me(currentUser: CurrentUser): Promise<{
     id: number;
     name: string;
     email: string;

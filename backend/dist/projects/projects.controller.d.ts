@@ -1,10 +1,10 @@
-import type { CurrentUserType } from '../auth/types/current-user.type';
-import { CreateProjectDto } from './dto/create-project.dto';
+import type { CurrentUser } from '../auth/auth.dto';
+import { CreateProjectDto } from './projects.dto';
 import { ProjectsService } from './projects.service';
 export declare class ProjectsController {
     private readonly projectsService;
     constructor(projectsService: ProjectsService);
-    create(dto: CreateProjectDto, currentUser: CurrentUserType): import("@prisma/client").Prisma.Prisma__ProjectClient<{
+    create(dto: CreateProjectDto, currentUser: CurrentUser): import("@prisma/client").Prisma.Prisma__ProjectClient<{
         name: string;
         createdAt: Date;
         id: number;

@@ -1,7 +1,7 @@
 import { User } from '@prisma/client';
 import type { UserRole } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from './users.dto';
 type PublicUser = {
     id: number;
     name: string;

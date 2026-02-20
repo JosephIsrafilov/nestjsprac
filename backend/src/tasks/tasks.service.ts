@@ -5,18 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { CurrentUserType } from '../auth/types/current-user.type';
+import type { CurrentUser } from '../auth/auth.dto';
 import { TASK_ACTION_TYPE, TASK_STATUS, USER_ROLE } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateTaskDto, ListTasksQueryDto, UpdateTaskDto } from './tasks.dto';
 
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateTaskDto, currentUser: CurrentUserType) {
+  async create(dto: CreateTaskDto, currentUser: CurrentUser) {
     const project = await this.prisma.project.findUnique({
       where: { id: dto.project_id },
     });
@@ -105,11 +103,7 @@ export class TasksService {
     });
   }
 
-  async update(
-    taskId: number,
-    dto: UpdateTaskDto,
-    currentUser: CurrentUserType,
-  ) {
+  async update(taskId: number, dto: UpdateTaskDto, currentUser: CurrentUser) {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
       include: {

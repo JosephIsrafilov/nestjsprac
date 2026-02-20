@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { UserRole } from '../common/constants';
-import { CurrentUserType } from './types/current-user.type';
+import { CurrentUser } from './auth.dto';
 
 type JwtPayload = {
   sub: number;
@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload): CurrentUserType {
+  validate(payload: JwtPayload): CurrentUser {
     if (!payload.sub || !payload.email || !payload.role) {
       throw new UnauthorizedException('Invalid token');
     }
