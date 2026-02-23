@@ -15,6 +15,11 @@ import { TasksController } from './tasks/tasks.controller';
 import { TasksService } from './tasks/tasks.service';
 import { UsersController, UsersService } from './users/users';
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('JWT_SECRET is required');
+}
+
 @Module({
   imports: [
     ServeStaticModule.forRoot({
@@ -23,7 +28,7 @@ import { UsersController, UsersService } from './users/users';
     }),
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'dev_super_secret_change_me',
+      secret: jwtSecret,
       signOptions: { expiresIn: '1d' },
     }),
   ],
