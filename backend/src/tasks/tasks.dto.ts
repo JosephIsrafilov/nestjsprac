@@ -46,10 +46,12 @@ export class CreateTaskDto {
 export class UpdateTaskDto {
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   title?: string;
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   description?: string;
 
   @IsOptional()
