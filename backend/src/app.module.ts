@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AuthController } from './auth/auth.controller';
@@ -20,10 +21,21 @@ if (!jwtSecret) {
   throw new Error('JWT_SECRET is required');
 }
 
+const uiPathCandidates = [
+  join(process.cwd(), 'ui'),
+  join(process.cwd(), '..', 'ui'),
+  join(__dirname, '..', '..', 'ui'),
+  join(__dirname, '..', '..', '..', 'ui'),
+];
+
+const uiRootPath =
+  uiPathCandidates.find((candidate) => existsSync(candidate)) ??
+  join(process.cwd(), '..', 'ui');
+
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), '..', 'ui'),
+      rootPath: uiRootPath,
       serveRoot: '/ui',
     }),
     PassportModule,
