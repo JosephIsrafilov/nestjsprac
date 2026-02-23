@@ -1,3 +1,5 @@
+# Task Manager
+
 ## Stack
 
 - NestJS
@@ -55,3 +57,11 @@ npm run start:dev
 - `PATCH /tasks/:id`
 - `GET /tasks/:id/activity`
 - `GET /dashboard`
+
+## Project mode
+
+```bash
+cd backend
+npm run lint
+npm run build
+```
