@@ -7,6 +7,7 @@ import {
   IsString,
   Matches,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { TASK_PRIORITY, TASK_STATUS } from '../common/constants';
 import type { TaskPriority, TaskStatus } from '../common/constants';
@@ -75,10 +76,11 @@ export class UpdateTaskDto {
   assigned_to?: number;
 
   @IsOptional()
+  @ValidateIf((_obj, value) => value !== null)
   @Matches(/^\d{4}-\d{2}-\d{2}$/, {
     message: 'due_date must be YYYY-MM-DD format',
   })
-  due_date?: string;
+  due_date?: string | null;
 }
 
 export class ListTasksQueryDto {

@@ -175,7 +175,10 @@ export class TasksService {
     }
 
     if (dto.due_date !== undefined) {
-      updateData.dueDate = this.parseDateOnly(dto.due_date, 'due_date');
+      updateData.dueDate =
+        dto.due_date === null
+          ? null
+          : this.parseDateOnly(dto.due_date, 'due_date');
     }
 
     const activities: Prisma.TaskActivityCreateManyInput[] = [];
