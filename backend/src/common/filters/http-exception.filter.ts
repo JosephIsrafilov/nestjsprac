@@ -14,7 +14,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-    let detail = 'Something went wrong';
+    let detail = 'Internal server error';
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
@@ -34,8 +34,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
           detail = message;
         }
       }
-    } else if (exception instanceof Error) {
-      detail = exception.message;
     }
 
     response.status(statusCode).json({ detail });
