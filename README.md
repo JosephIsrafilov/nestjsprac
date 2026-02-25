@@ -24,7 +24,7 @@ Get-ChildItem "C:\Program Files\PostgreSQL\*\bin\psql.exe" -ErrorAction Silently
 3. Create DB/user (one time):
 
 ```powershell
-$psql = "C:\Program Files\PostgreSQL\17\bin\psql.exe" (or replace path with your version)
+$psql = "C:\Program Files\PostgreSQL\17\bin\psql.exe" # replace path with your version
 & $psql -U postgres -c "CREATE USER task_user WITH PASSWORD 'task_pass';"
 & $psql -U postgres -c "CREATE DATABASE task_db OWNER task_user;"
 ```
@@ -91,6 +91,16 @@ npx prisma generate
 cd backend
 if (Test-Path .\node_modules) { Remove-Item -Recurse -Force .\node_modules }
 npm install
+```
+
+5. `Cannot find module ...\dist\main`
+- This usually happens because stale TypeScript incremental cache skipped re-emit.
+- Fix:
+```powershell
+cd backend
+if (Test-Path .\tsconfig.build.tsbuildinfo) { Remove-Item .\tsconfig.build.tsbuildinfo -Force }
+npm run build
+npm run start:dev
 ```
 
 ## Open

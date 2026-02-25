@@ -1,9 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from '../users/users';
-import { LoginDto } from './auth.dto';
-import type { AuthUser } from './auth.dto';
+import { UsersService } from '../../users/services/users.service';
+import { LoginDto } from '../dto/login.dto';
+import type { CurrentUserType } from '../types/current-user.type';
 
 @Injectable()
 export class AuthService {
@@ -14,13 +14,11 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<{ access_token: string }> {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user) {
-      throw new UnauthorizedException('Wrong email or password');
-    }
+    this.assertCredentialsUserExists(user);
 
     const validPassword = await bcrypt.compare(dto.password, user.passwordHash);
     if (!validPassword) {
-      throw new UnauthorizedException('Wrong email or password');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const payload = {
@@ -34,7 +32,7 @@ export class AuthService {
     };
   }
 
-  async me(currentUser: AuthUser): Promise<{
+  async me(currentUser: CurrentUserType): Promise<{
     id: number;
     name: string;
     email: string;
@@ -51,5 +49,15 @@ export class AuthService {
       email: user.email,
       role: user.role,
     };
+  }
+
+  private assertCredentialsUserExists(
+    user: Awaited<ReturnType<UsersService['findByEmail']>>,
+  ): asserts user is NonNullable<
+    Awaited<ReturnType<UsersService['findByEmail']>>
+  > {
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
   }
 }

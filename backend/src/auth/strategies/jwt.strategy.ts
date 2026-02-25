@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { UserRole } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { UserRole } from '../common/constants';
-import type { AuthUser } from './auth.dto';
+import type { CurrentUserType } from '../types/current-user.type';
 
 type JwtPayload = {
   sub: number;
@@ -25,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload): AuthUser {
+  validate(payload: JwtPayload): CurrentUserType {
     if (!payload.sub || !payload.email || !payload.role) {
       throw new UnauthorizedException('Invalid token');
     }

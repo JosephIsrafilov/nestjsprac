@@ -9,11 +9,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { AuthUser } from '../auth/auth.dto';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateTaskDto, ListTasksQueryDto, UpdateTaskDto } from './tasks.dto';
-import { TasksService } from './tasks.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import type { CurrentUserType } from '../../auth/types/current-user.type';
+import { CreateTaskDto } from '../dto/create-task.dto';
+import { ListTasksQueryDto } from '../dto/list-tasks-query.dto';
+import { UpdateTaskDto } from '../dto/update-task.dto';
+import { TasksService } from '../services/tasks.service';
 
 @Controller('tasks')
 @UseGuards(JwtAuthGuard)
@@ -21,7 +23,10 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  create(@Body() dto: CreateTaskDto, @CurrentUser() currentUser: AuthUser) {
+  create(
+    @Body() dto: CreateTaskDto,
+    @CurrentUser() currentUser: CurrentUserType,
+  ) {
     return this.tasksService.create(dto, currentUser);
   }
 
@@ -34,7 +39,7 @@ export class TasksController {
   update(
     @Param('id', ParseIntPipe) taskId: number,
     @Body() dto: UpdateTaskDto,
-    @CurrentUser() currentUser: AuthUser,
+    @CurrentUser() currentUser: CurrentUserType,
   ) {
     return this.tasksService.update(taskId, dto, currentUser);
   }

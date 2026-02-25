@@ -1,25 +1,15 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { AppController } from './app.controller';
-import { AuthController } from './auth/auth.controller';
-import { AuthService } from './auth/auth.service';
-import { JwtAuthGuard } from './auth/jwt-auth.guard';
-import { JwtStrategy } from './auth/jwt.strategy';
-import { DashboardController, DashboardService } from './dashboard/dashboard';
-import { PrismaService } from './prisma/prisma.service';
-import { ProjectsController, ProjectsService } from './projects/projects';
-import { TasksController } from './tasks/tasks.controller';
-import { TasksService } from './tasks/tasks.service';
-import { UsersController, UsersService } from './users/users';
-
-const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret) {
-  throw new Error('JWT_SECRET is required');
-}
+import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { UsersModule } from './users/users.module';
 
 const uiPathCandidates = [
   join(process.cwd(), 'ui'),
@@ -38,29 +28,14 @@ const uiRootPath =
       rootPath: uiRootPath,
       serveRoot: '/ui',
     }),
-    PassportModule,
-    JwtModule.register({
-      secret: jwtSecret,
-      signOptions: { expiresIn: '1d' },
-    }),
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    ProjectsModule,
+    TasksModule,
+    DashboardModule,
   ],
-  controllers: [
-    AppController,
-    AuthController,
-    UsersController,
-    ProjectsController,
-    TasksController,
-    DashboardController,
-  ],
-  providers: [
-    PrismaService,
-    AuthService,
-    UsersService,
-    ProjectsService,
-    TasksService,
-    DashboardService,
-    JwtStrategy,
-    JwtAuthGuard,
-  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

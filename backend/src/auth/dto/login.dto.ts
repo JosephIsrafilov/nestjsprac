@@ -1,5 +1,4 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import type { UserRole } from '../common/constants';
 
 export class LoginDto {
   @IsEmail()
@@ -9,9 +8,3 @@ export class LoginDto {
   @IsNotEmpty()
   password!: string;
 }
-
-export type AuthUser = {
-  id: number;
-  email: string;
-  role: UserRole;
-};
