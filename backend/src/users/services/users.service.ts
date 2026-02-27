@@ -9,6 +9,7 @@ type PublicUser = {
   name: string;
   email: string;
   role: UserRole;
+  createdAt: Date;
 };
 
 @Injectable()
@@ -59,6 +60,7 @@ export class UsersService {
       name: user.name,
       email: user.email,
       role: user.role,
+      createdAt: user.createdAt,
     };
   }
 

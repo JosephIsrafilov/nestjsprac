@@ -29,6 +29,9 @@ type TaskWithProjectOwner = Prisma.TaskGetPayload<{
 
 @Injectable()
 export class TasksService {
+  private static readonly DEFAULT_PAGE = 1;
+  private static readonly DEFAULT_LIMIT = 50;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateTaskDto, currentUser: CurrentUserType) {
@@ -52,9 +55,25 @@ export class TasksService {
   }
 
   list(query: ListTasksQueryDto) {
+    const { skip, take } = this.buildPagination(query);
+
     return this.prisma.task.findMany({
       where: this.buildListWhere(query),
-      orderBy: { id: 'asc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip,
+      take,
+      include: {
+        project: true,
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
     });
   }
 
@@ -96,6 +115,17 @@ export class TasksService {
     return this.prisma.taskActivity.findMany({
       where: { taskId },
       orderBy: { timestamp: 'desc' },
+      include: {
+        changedByUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
     });
   }
 
@@ -106,19 +136,42 @@ export class TasksService {
       where.status = query.status;
     }
 
+    if (query.priority) {
+      where.priority = query.priority;
+    }
+
     if (query.assigned_to) {
       where.assignedTo = query.assigned_to;
     }
 
-    if (query.due_from || query.due_to) {
+    if (query.project_id) {
+      where.projectId = query.project_id;
+    }
+
+    let dueFrom: Date | undefined;
+    let dueTo: Date | undefined;
+
+    if (query.due_from) {
+      dueFrom = this.parseDateOnly(query.due_from, 'due_from');
+    }
+
+    if (query.due_to) {
+      dueTo = this.parseDateOnly(query.due_to, 'due_to');
+    }
+
+    if (dueFrom && dueTo && dueFrom > dueTo) {
+      throw new BadRequestException('due_from cannot be later than due_to');
+    }
+
+    if (dueFrom || dueTo) {
       const dueDateFilter: Prisma.DateTimeNullableFilter = {};
 
-      if (query.due_from) {
-        dueDateFilter.gte = this.parseDateOnly(query.due_from, 'due_from');
+      if (dueFrom) {
+        dueDateFilter.gte = dueFrom;
       }
 
-      if (query.due_to) {
-        dueDateFilter.lte = this.parseDateOnly(query.due_to, 'due_to');
+      if (dueTo) {
+        dueDateFilter.lte = dueTo;
       }
 
       where.dueDate = dueDateFilter;
@@ -135,6 +188,19 @@ export class TasksService {
     ];
 
     return where;
+  }
+
+  private buildPagination(query: ListTasksQueryDto): {
+    skip: number;
+    take: number;
+  } {
+    const page = query.page ?? TasksService.DEFAULT_PAGE;
+    const take = query.limit ?? TasksService.DEFAULT_LIMIT;
+
+    return {
+      skip: (page - 1) * take,
+      take,
+    };
   }
 
   private buildTaskUpdateData(dto: UpdateTaskDto): Prisma.TaskUpdateInput {
@@ -226,7 +292,7 @@ export class TasksService {
     dto: UpdateTaskDto,
   ): void {
     if (
-      dto.status &&
+      dto.status !== undefined &&
       task.status === TaskStatus.done &&
       dto.status !== TaskStatus.done
     ) {

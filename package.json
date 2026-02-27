@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "frontend": "cd frontend && npx vite --port 5173",
+    "backend": "cd backend && npm run start:dev",
+    "dev": "start cmd /k \"cd backend && npm run start:dev\" && cd frontend && npx vite --port 5173"
+  },
   "dependencies": {
     "typescript": "^5.9.3"
   },

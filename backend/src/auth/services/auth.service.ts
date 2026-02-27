@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../../users/services/users.service';
 import { LoginDto } from '../dto/login.dto';
@@ -36,7 +37,8 @@ export class AuthService {
     id: number;
     name: string;
     email: string;
-    role: string;
+    role: UserRole;
+    createdAt: Date;
   }> {
     const user = await this.usersService.findById(currentUser.id);
     if (!user) {
@@ -48,6 +50,7 @@ export class AuthService {
       name: user.name,
       email: user.email,
       role: user.role,
+      createdAt: user.createdAt,
     };
   }
 

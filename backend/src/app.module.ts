@@ -11,21 +11,22 @@ import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 
-const uiPathCandidates = [
+const staticPathCandidates = [
+  join(process.cwd(), 'frontend', 'dist'),
+  join(process.cwd(), '..', 'frontend', 'dist'),
+  join(__dirname, '..', '..', '..', 'frontend', 'dist'),
   join(process.cwd(), 'ui'),
   join(process.cwd(), '..', 'ui'),
-  join(__dirname, '..', '..', 'ui'),
-  join(__dirname, '..', '..', '..', 'ui'),
 ];
 
-const uiRootPath =
-  uiPathCandidates.find((candidate) => existsSync(candidate)) ??
-  join(process.cwd(), '..', 'ui');
+const staticRootPath =
+  staticPathCandidates.find((candidate) => existsSync(candidate)) ??
+  join(process.cwd(), '..', 'frontend', 'dist');
 
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: uiRootPath,
+      rootPath: staticRootPath,
       serveRoot: '/ui',
     }),
     PrismaModule,
