@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -9,8 +10,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import type { CurrentUserType } from '../../auth/types/current-user.type';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { ListTasksQueryDto } from '../dto/list-tasks-query.dto';
@@ -47,5 +51,12 @@ export class TasksController {
   @Get(':id/activity')
   getActivity(@Param('id', ParseIntPipe) taskId: number) {
     return this.tasksService.getActivity(taskId);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.admin)
+  remove(@Param('id', ParseIntPipe) taskId: number) {
+    return this.tasksService.remove(taskId);
   }
 }

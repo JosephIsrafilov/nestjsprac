@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -52,6 +52,61 @@ export class UsersService {
 
   findById(id: number): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async remove(userId: number, actorId: number): Promise<{ id: number }> {
+    if (userId === actorId) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User was not found');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const ownedProjects = await tx.project.findMany({
+        where: { createdBy: userId },
+        select: { id: true },
+      });
+      const ownedProjectIds = ownedProjects.map((project) => project.id);
+
+      await tx.taskActivity.deleteMany({
+        where: {
+          OR: [
+            { changedBy: userId },
+            { task: { assignedTo: userId } },
+            ...(ownedProjectIds.length > 0
+              ? [{ task: { projectId: { in: ownedProjectIds } } }]
+              : []),
+          ],
+        },
+      });
+
+      await tx.task.deleteMany({
+        where: {
+          OR: [
+            { assignedTo: userId },
+            ...(ownedProjectIds.length > 0
+              ? [{ projectId: { in: ownedProjectIds } }]
+              : []),
+          ],
+        },
+      });
+
+      await tx.project.deleteMany({
+        where: { createdBy: userId },
+      });
+
+      await tx.user.delete({
+        where: { id: userId },
+      });
+    });
+
+    return { id: userId };
   }
 
   private toPublicUser(user: User): PublicUser {

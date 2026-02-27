@@ -129,6 +129,16 @@ export class TasksService {
     });
   }
 
+  async remove(taskId: number): Promise<{ id: number }> {
+    await this.getTaskOrThrow(taskId);
+
+    await this.prisma.task.delete({
+      where: { id: taskId },
+    });
+
+    return { id: taskId };
+  }
+
   private buildListWhere(query: ListTasksQueryDto): Prisma.TaskWhereInput {
     const where: Prisma.TaskWhereInput = {};
 

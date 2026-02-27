@@ -49,7 +49,11 @@
     "descPlaceholder": "Kurze Projektbeschreibung...",
     "noDescription": "Keine Beschreibung",
     "cancel": "Abbrechen",
-    "created": "Projekt erstellt!"
+    "created": "Projekt erstellt!",
+    "delete": "Löschen",
+    "deleted": "Projekt gelöscht!",
+    "deleteConfirm": "Projekt \"{{name}}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteFailed": "Projekt konnte nicht gelöscht werden."
   },
   "tasks": {
     "title": "Aufgaben",
@@ -107,7 +111,11 @@
     "reassigned": "hat Aufgabe neu zugewiesen",
     "edited": "hat Aufgabe bearbeitet",
     "updateFailed": "Aufgabe konnte nicht aktualisiert werden.",
-    "newTaskModal": "Neue Aufgabe"
+    "newTaskModal": "Neue Aufgabe",
+    "delete": "Löschen",
+    "deleted": "Aufgabe gelöscht!",
+    "deleteConfirm": "Aufgabe \"{{title}}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteFailed": "Aufgabe konnte nicht gelöscht werden."
   },
   "users": {
     "title": "Teammitglieder",
@@ -118,6 +126,7 @@
     "colMember": "Mitglied",
     "colRole": "Rolle",
     "colJoined": "Beigetreten",
+    "colActions": "Aktionen",
     "modalTitle": "Teammitglied hinzufügen",
     "nameLabel": "Vollständiger Name",
     "namePlaceholder": "Max Mustermann",
@@ -127,7 +136,11 @@
     "passwordPlaceholder": "Mindestens 6 Zeichen",
     "roleLabel": "Rolle",
     "cancel": "Abbrechen",
-    "created": "Benutzer erstellt!"
+    "created": "Benutzer erstellt!",
+    "delete": "Löschen",
+    "deleted": "Benutzer gelöscht!",
+    "deleteConfirm": "Benutzer \"{{name}}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteFailed": "Benutzer konnte nicht gelöscht werden."
   },
   "roles": {
     "admin": "Administrator",

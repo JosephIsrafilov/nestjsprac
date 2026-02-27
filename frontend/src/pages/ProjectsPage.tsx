@@ -1,9 +1,9 @@
 import { memo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, FolderKanban, Calendar } from 'lucide-react';
+import { Plus, FolderKanban, Calendar, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { getProjects, createProject } from '../services/api.service';
+import { getProjects, createProject, deleteProject } from '../services/api.service';
 import { extractErrorMessage } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -11,10 +11,12 @@ import { Modal } from '../components/ui/Modal';
 import { Card } from '../components/ui/Card';
 import { PageSpinner } from '../components/ui/Spinner';
 import { formatDate } from '../lib/utils';
+import { useAuthStore } from '../store/auth.store';
 
 export const ProjectsPage = memo(() => {
   const qc = useQueryClient();
   const { t } = useTranslation();
+  const { isAdmin } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -36,6 +38,19 @@ export const ProjectsPage = memo(() => {
     },
     onError: (err: unknown) => {
       toast.error(extractErrorMessage(err, 'Failed to create project.'));
+    },
+  });
+
+  const { mutate: removeProject, isPending: isDeleting } = useMutation({
+    mutationFn: deleteProject,
+    onSuccess: () => {
+      toast.success(t('projects.deleted'));
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err, t('projects.deleteFailed')));
     },
   });
 
@@ -79,7 +94,25 @@ export const ProjectsPage = memo(() => {
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
                   <FolderKanban className="h-5 w-5 text-blue-600" />
                 </div>
-                <span className="text-xs text-slate-400">#{project.id}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">#{project.id}</span>
+                  {isAdmin() && (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      className="h-7 px-2"
+                      disabled={isDeleting}
+                      onClick={() => {
+                        if (!window.confirm(t('projects.deleteConfirm', { name: project.name }))) {
+                          return;
+                        }
+                        removeProject(project.id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="mt-4">
                 <h3 className="font-semibold text-slate-900 text-sm">{project.name}</h3>

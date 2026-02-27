@@ -33,6 +33,11 @@ export const createUser = async (dto: CreateUserDto): Promise<User> => {
   return data;
 };
 
+export const deleteUser = async (id: number): Promise<{ id: number }> => {
+  const { data } = await api.delete(`/users/${id}`);
+  return data;
+};
+
 export const getProjects = async (): Promise<Project[]> => {
   const { data } = await api.get('/projects');
   return data;
@@ -40,6 +45,11 @@ export const getProjects = async (): Promise<Project[]> => {
 
 export const createProject = async (dto: CreateProjectDto): Promise<Project> => {
   const { data } = await api.post('/projects', dto);
+  return data;
+};
+
+export const deleteProject = async (id: number): Promise<{ id: number }> => {
+  const { data } = await api.delete(`/projects/${id}`);
   return data;
 };
 
@@ -55,6 +65,11 @@ export const createTask = async (dto: CreateTaskDto): Promise<Task> => {
 
 export const updateTask = async (id: number, dto: UpdateTaskDto): Promise<Task> => {
   const { data } = await api.patch(`/tasks/${id}`, dto);
+  return data;
+};
+
+export const deleteTask = async (id: number): Promise<{ id: number }> => {
+  const { data } = await api.delete(`/tasks/${id}`);
   return data;
 };
 

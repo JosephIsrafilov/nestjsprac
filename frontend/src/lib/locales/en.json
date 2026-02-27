@@ -49,7 +49,11 @@
     "descPlaceholder": "Brief description of the project...",
     "noDescription": "No description",
     "cancel": "Cancel",
-    "created": "Project created!"
+    "created": "Project created!",
+    "delete": "Delete",
+    "deleted": "Project deleted!",
+    "deleteConfirm": "Delete project \"{{name}}\"? This action cannot be undone.",
+    "deleteFailed": "Failed to delete project."
   },
   "tasks": {
     "title": "Tasks",
@@ -107,7 +111,11 @@
     "reassigned": "reassigned task",
     "edited": "edited task",
     "updateFailed": "Failed to update task.",
-    "newTaskModal": "New Task"
+    "newTaskModal": "New Task",
+    "delete": "Delete",
+    "deleted": "Task deleted!",
+    "deleteConfirm": "Delete task \"{{title}}\"? This action cannot be undone.",
+    "deleteFailed": "Failed to delete task."
   },
   "users": {
     "title": "Team Members",
@@ -118,6 +126,7 @@
     "colMember": "Member",
     "colRole": "Role",
     "colJoined": "Joined",
+    "colActions": "Actions",
     "modalTitle": "Add Team Member",
     "nameLabel": "Full name",
     "namePlaceholder": "Jane Smith",
@@ -127,7 +136,11 @@
     "passwordPlaceholder": "At least 6 characters",
     "roleLabel": "Role",
     "cancel": "Cancel",
-    "created": "User created!"
+    "created": "User created!",
+    "delete": "Delete",
+    "deleted": "User deleted!",
+    "deleteConfirm": "Delete user \"{{name}}\"? This action cannot be undone.",
+    "deleteFailed": "Failed to delete user."
   },
   "roles": {
     "admin": "Admin",

@@ -1,12 +1,20 @@
 import { useState, useMemo, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CheckSquare, Calendar, ChevronDown, Activity } from 'lucide-react';
+import {
+  Plus,
+  CheckSquare,
+  Calendar,
+  ChevronDown,
+  Activity,
+  Trash2,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import {
   getTasks,
   createTask,
   updateTask,
+  deleteTask,
   getProjects,
   getUsers,
   getTaskActivity,
@@ -28,6 +36,7 @@ import {
 import { getStatusOptions, getPriorityOptions } from '../lib/constants';
 import type { TaskStatus, TaskPriority, Task } from '../types';
 import type { TaskActivity } from '../types';
+import { useAuthStore } from '../store/auth.store';
 
 const ActivityModal = memo(({ task, onClose }: { task: Task; onClose: () => void }) => {
   const { t } = useTranslation();
@@ -273,6 +282,8 @@ CreateTaskModal.displayName = 'CreateTaskModal';
 
 export const TasksPage = memo(() => {
   const { t } = useTranslation();
+  const { isAdmin } = useAuthStore();
+  const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [activityTask, setActivityTask] = useState<Task | null>(null);
@@ -289,6 +300,18 @@ export const TasksPage = memo(() => {
         ...(filterStatus ? { status: filterStatus as TaskStatus } : {}),
         ...(filterPriority ? { priority: filterPriority as TaskPriority } : {}),
       }),
+  });
+
+  const { mutate: removeTask, isPending: isDeleting } = useMutation({
+    mutationFn: deleteTask,
+    onSuccess: () => {
+      toast.success(t('tasks.deleted'));
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err, t('tasks.deleteFailed')));
+    },
   });
 
   if (isLoading) return <PageSpinner />;
@@ -452,6 +475,23 @@ export const TasksPage = memo(() => {
                         >
                           <Activity className="h-3 w-3" />
                         </Button>
+                        {isAdmin() && (
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            disabled={isDeleting}
+                            onClick={() => {
+                              if (!window.confirm(t('tasks.deleteConfirm', { title: task.title }))) {
+                                return;
+                              }
+                              removeTask(task.id);
+                            }}
+                            className="h-7 text-xs"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            {t('tasks.delete')}
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

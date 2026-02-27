@@ -1,10 +1,10 @@
 import { memo, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Users, Shield, User } from 'lucide-react';
+import { Plus, Users, Shield, User, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
-import { getUsers, createUser } from '../services/api.service';
+import { getUsers, createUser, deleteUser } from '../services/api.service';
 import { useAuthStore } from '../store/auth.store';
 import { getRoleOptions } from '../lib/constants';
 import { extractErrorMessage, formatDate } from '../lib/utils';
@@ -27,6 +27,7 @@ export function UsersPage() {
 const UsersContent = memo(() => {
   const qc = useQueryClient();
   const { t } = useTranslation();
+  const { user: currentUser } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,6 +55,20 @@ const UsersContent = memo(() => {
     },
     onError: (err: unknown) => {
       toast.error(extractErrorMessage(err, 'Failed to create user.'));
+    },
+  });
+
+  const { mutate: removeUser, isPending: isDeleting } = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      toast.success(t('users.deleted'));
+      qc.invalidateQueries({ queryKey: ['users'] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err, t('users.deleteFailed')));
     },
   });
 
@@ -94,6 +109,9 @@ const UsersContent = memo(() => {
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
                     {t('users.colJoined')}
                   </th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
+                    {t('users.colActions')}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -126,6 +144,22 @@ const UsersContent = memo(() => {
                         </div>
                       </td>
                       <td className="px-4 py-4 text-slate-500">{formatDate(user.createdAt)}</td>
+                      <td className="px-4 py-4">
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={isDeleting || currentUser?.id === user.id}
+                          onClick={() => {
+                            if (!window.confirm(t('users.deleteConfirm', { name: user.name }))) {
+                              return;
+                            }
+                            removeUser(user.id);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          {t('users.delete')}
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
