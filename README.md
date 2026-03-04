@@ -1,103 +1,116 @@
 # Task Manager
 
-Full-stack task management application — NestJS REST API backend + React SPA frontend.
+SupaBase Scheme
 
-## Features
+![Task Manager preview](./image.png)
 
-- **JWT Authentication** — login, persistent sessions via localStorage, auto-redirect on 401
-- **Role-based access** — `admin` and `member` roles; admin-only pages guarded on both frontend and backend
-- **Projects** — create and view projects with task progress bars
-- **Tasks** — create, filter by status/priority, inline edit status/priority/assignee, full activity log per task
-- **Team Members** — admin can create users and assign roles
-- **Dashboard** — stat cards, tasks-by-status pie chart, tasks-by-member bar chart, recent tasks list, per-project progress
-- **Internationalisation (i18n)** — English / Russian / German, switchable at runtime with language persisted in `localStorage`
 
----
+## What Is New
+
+- Kanban board for tasks with drag-and-drop status changes
+- Task activity log (status changes, reassignments, edits)
+- Advanced task filters: `status`, `priority`, `search`, `due_from`, `due_to`, pagination (`page`, `limit`)
+- Delete operations for users, projects, and tasks (role-gated)
+- Global light/dark theme switch with persisted preference
+- Extended i18n: English, Russian, German, Azerbaijani
+- Dashboard improvements: status pie chart, member bar chart, project distribution, recent tasks
+- Root scripts for faster local launch on Windows (`npm run dev`)
 
 ## Stack
 
 ### Backend (`backend/`)
 
-| | |
+| Layer | Technology |
 |---|---|
 | Runtime | Node.js |
-| Framework | NestJS |
+| Framework | NestJS 11 |
 | ORM | Prisma |
 | Database | PostgreSQL (Supabase) |
-| Auth | JWT (Bearer) + bcrypt |
+| Auth | JWT (Bearer) + Passport + bcrypt |
 | Validation | class-validator + class-transformer |
 
 ### Frontend (`frontend/`)
 
-| | |
+| Layer | Technology |
 |---|---|
 | Build tool | Vite 7 |
-| UI library | React 19 + TypeScript 5.9 |
-| Styling | Tailwind CSS v4 (`@tailwindcss/vite`) |
-| Server state | TanStack Query v5 |
+| UI | React 19 + TypeScript |
+| Styling | Tailwind CSS v4 |
+| Data fetching | TanStack Query v5 |
 | Routing | React Router v7 |
-| Client state | Zustand v5 |
-| Charts | Recharts v3 |
-| HTTP | Axios (JWT interceptor + 401 handler) |
-| i18n | i18next + react-i18next + i18next-browser-languagedetector |
+| Local state | Zustand |
+| Charts | Recharts |
+| HTTP client | Axios (JWT interceptor + 401 handling) |
+| i18n | i18next + react-i18next + language detector |
 | Notifications | react-hot-toast |
-| Icons | lucide-react |
 
----
+## Core Features
+
+- JWT authentication with `/auth/login` and `/auth/me`
+- Role model: `admin` and `member`
+- Admin-only actions:
+  - Create/delete users
+  - Delete projects
+  - Delete tasks
+- Projects:
+  - Create/list/delete
+  - Automatic cleanup of related tasks/activity on delete
+- Tasks:
+  - Create/list/update/delete
+  - Date-safe validation (`YYYY-MM-DD`)
+  - Server-side filtering and pagination
+  - Kanban movement by drag-and-drop in UI
+  - Immutable done-state rule (cannot reopen done task)
+  - Activity stream per task
+- Dashboard:
+  - Tasks by status
+  - Tasks by member
+  - Tasks by project
+  - Recent tasks and completion metrics
+- UI/UX:
+  - Lazy-loaded pages
+  - Global loading states
+  - Toast feedback
+  - Theme switcher (light/dark)
+  - i18n switcher
 
 ## Project Structure
 
-```
+```text
 nestjsprac/
-├── backend/                  # NestJS API — port 3000
+├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   ├── seed.ts
 │   │   └── migrations/
 │   └── src/
-│       ├── auth/             
-│       ├── users/            
-│       ├── projects/         
-│       ├── tasks/            
-│       ├── dashboard/        
-│       ├── prisma/           
-│       └── common/           
-│
-└── frontend/                 
-    └── src/
-        ├── pages/
-        │   ├── LoginPage.tsx
-        │   ├── DashboardPage.tsx
-        │   ├── ProjectsPage.tsx
-        │   ├── TasksPage.tsx
-        │   └── UsersPage.tsx
-        ├── components/
-        │   ├── layout/       
-        │   └── ui/           
-        │                     
-        ├── services/
-        │   └── api.service.ts  
-        ├── store/
-        │   └── auth.store.ts   
-        ├── lib/
-        │   ├── api.ts          
-        │   ├── utils.ts        
-        │   ├── i18n.ts         
-        │   └── locales/
-        │       ├── en.json
-        │       ├── ru.json
-        │       └── de.json
-        └── types/
-            └── index.ts        
+│       ├── auth/
+│       ├── users/
+│       ├── projects/
+│       ├── tasks/
+│       ├── dashboard/
+│       ├── prisma/
+│       └── common/
+├── frontend/
+│   └── src/
+│       ├── pages/
+│       ├── components/
+│       ├── services/
+│       ├── store/
+│       ├── lib/
+│       └── types/
+├── image.png
+└── README.md
 ```
 
----
+## Requirements
 
-## Quick Start
+- Node.js 20+ (recommended)
+- npm 10+
+- Supabase project with PostgreSQL
+- Windows PowerShell/CMD recommended for this repo scripts
 
-> **Windows** — use PowerShell or CMD, not WSL/Git Bash.
-
-### 1. Configure the backend environment
+## Environment Setup
 
 Create `backend/.env`:
 
@@ -108,7 +121,15 @@ JWT_SECRET="dev_super_secret_change_me"
 PORT="3000"
 ```
 
-### 2. Start the backend
+Notes:
+
+- `DATABASE_URL`: pooled connection (runtime, pgbouncer)
+- `DIRECT_URL`: direct/session connection (migrations)
+- URL-encode special characters in password (`!` -> `%21`, etc.)
+
+## Quick Start
+
+### 1) Backend
 
 ```powershell
 cd backend
@@ -119,7 +140,7 @@ npm run prisma:seed
 npm run start:dev
 ```
 
-### 3. Start the frontend
+### 2) Frontend
 
 ```powershell
 cd frontend
@@ -127,88 +148,108 @@ npm install
 npm run dev
 ```
 
-The Vite dev server proxies all `/api/*` requests to `http://127.0.0.1:3000` automatically.
+Frontend requests `/api/*` are proxied to `http://127.0.0.1:3000`.
 
----
+### 3) Optional root scripts (Windows)
+
+From repo root:
+
+```powershell
+npm run backend
+npm run frontend
+npm run dev
+```
+
+`npm run dev` opens backend in a separate `cmd` window and starts frontend in current shell.
+
+## Default Credentials
+
+```text
+admin@example.com / admin123
+```
 
 ## URLs
 
 | Service | URL |
 |---|---|
-| Frontend (React SPA) | http://localhost:5173 |
+| Frontend SPA | http://localhost:5173 |
 | Backend API | http://127.0.0.1:3000 |
-| Legacy HTML UI | http://127.0.0.1:3000/ui |
+| Health/root | http://127.0.0.1:3000/ |
+| Static UI (when built) | http://127.0.0.1:3000/ui |
 
----
+## API Overview
 
-## Default Credentials
+### Auth
 
-```
-admin@example.com  /  admin123
-```
-
----
-
-## Frontend Pages
-
-| Page | Route | Access | Description |
+| Method | Path | Auth | Description |
 |---|---|---|---|
-| Login | `/login` | Public | Email/password sign-in with language switcher |
-| Dashboard | `/dashboard` | All users | Stat cards, pie chart, bar chart, recent tasks, project progress |
-| Projects | `/projects` | All users | Project grid with task counts and progress bars; create new project |
-| Tasks | `/tasks` | All users | Filterable task table; create task, edit status/priority/assignee, view activity log |
-| Team Members | `/users` | Admin only | User table with roles; create new team member |
+| POST | `/auth/login` | No | Returns `{ access_token }` |
+| GET | `/auth/me` | Bearer | Current user profile |
 
----
+### Users
 
-## Internationalisation
+| Method | Path | Auth | Role |
+|---|---|---|---|
+| GET | `/users` | Bearer | admin, member |
+| POST | `/users` | Bearer | admin |
+| DELETE | `/users/:id` | Bearer | admin |
 
-The UI supports three languages switchable via the language buttons in the sidebar and login page:
+### Projects
+
+| Method | Path | Auth | Role |
+|---|---|---|---|
+| GET | `/projects` | Bearer | admin, member |
+| POST | `/projects` | Bearer | admin, member |
+| DELETE | `/projects/:id` | Bearer | admin |
+
+### Tasks
+
+| Method | Path | Auth | Role |
+|---|---|---|---|
+| GET | `/tasks` | Bearer | admin, member |
+| POST | `/tasks` | Bearer | admin, member |
+| PATCH | `/tasks/:id` | Bearer | admin, member |
+| DELETE | `/tasks/:id` | Bearer | admin |
+| GET | `/tasks/:id/activity` | Bearer | admin, member |
+
+Task query params:
+
+- `status`: `todo | in_progress | review | done`
+- `priority`: `low | medium | high`
+- `assigned_to`: number
+- `project_id`: number
+- `due_from`: `YYYY-MM-DD`
+- `due_to`: `YYYY-MM-DD`
+- `search`: string
+- `page`: number (default `1`)
+- `limit`: number (default `50`, max `100`)
+
+### Dashboard
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/dashboard` | Bearer | Aggregates by status/project/user |
+
+## Frontend Routes
+
+| Route | Access | Description |
+|---|---|---|
+| `/login` | Public | Sign in |
+| `/dashboard` | Authenticated | Analytics and summary |
+| `/projects` | Authenticated | Project management |
+| `/tasks` | Authenticated | Kanban + filters + task activity |
+| `/users` | Admin | Team management |
+
+## Language Support
 
 | Code | Language |
 |---|---|
 | `en` | English |
-| `ru` | Русский (Russian) — includes correct plural forms |
-| `de` | Deutsch (German) |
+| `ru` | Russian |
+| `de` | German |
+| `az` | Azerbaijani |
 
-The selected language is stored in `localStorage` and restored on next visit.
-
----
-
-## API Endpoints
-
-### Auth
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| POST | `/auth/login` | — | Returns `{ access_token }` |
-| GET | `/auth/me` | Bearer | Current user object |
-
-### Users _(admin only)_
-| Method | Path | Auth |
-|---|---|---|
-| GET | `/users` | Bearer (admin) |
-| POST | `/users` | Bearer (admin) |
-
-### Projects
-| Method | Path | Auth |
-|---|---|---|
-| GET | `/projects` | Bearer |
-| POST | `/projects` | Bearer |
-
-### Tasks
-| Method | Path | Query params | Auth |
-|---|---|---|---|
-| GET | `/tasks` | `status`, `priority`, `project_id`, `assigned_to` | Bearer |
-| POST | `/tasks` | — | Bearer |
-| PATCH | `/tasks/:id` | — | Bearer |
-| GET | `/tasks/:id/activity` | — | Bearer |
-
-### Dashboard
-| Method | Path | Auth |
-|---|---|---|
-| GET | `/dashboard` | Bearer |
-
----
+Language is persisted in browser storage.
 
 ## Useful Commands
 
@@ -216,37 +257,80 @@ The selected language is stored in `localStorage` and restored on next visit.
 
 ```powershell
 cd backend
-npm run start:dev   # watch mode
+npm run start:dev
 npm run build
 npm run lint
-npx prisma studio   # GUI database browser
+npm run db:reset
+npx prisma studio
 ```
 
 ### Frontend
 
 ```powershell
 cd frontend
-npm run dev         # dev server with HMR
-npm run build       # production build
-npm run preview     # preview production build
-npx tsc -b --noEmit # type-check without emitting
+npm run dev
+npm run build
+npm run preview
+npm run lint
 ```
-
----
 
 ## Troubleshooting
 
-**`P1001 Can't reach database server`**  
-`DIRECT_URL` may need to point to the pooler on `:5432` instead of `db.<project>.supabase.co:5432` on IPv4-restricted networks.
+### `Cannot find module ... start:dev`
 
-**`P1000 Authentication failed`**  
-Check the DB password. URL-encode special characters (`!`, `@`, `[`, `]`, etc.).
+Wrong command:
 
-**`EADDRINUSE: 3000`**  
-Another process is on port 3000. Kill it or use a different port:
 ```powershell
-$env:PORT="3001"; npm run start:dev
+npx run start:dev
 ```
 
-**Frontend shows "Invalid email or password" on valid credentials**  
-Ensure the backend is running on port 3000 and the `JWT_SECRET` in `.env` is set.
+Correct:
+
+```powershell
+npm run start:dev
+```
+
+### No data appears in UI
+
+Usually one of:
+
+- Migrations were not applied
+- Seed was not run
+- Backend is not actually running
+- Wrong Supabase credentials/project in `.env`
+
+Fix sequence:
+
+```powershell
+cd backend
+npx prisma migrate deploy
+npm run prisma:seed
+npm run start:dev
+```
+
+### `P1001 Can't reach database server`
+
+Check host/port and network rules. On IPv4-restricted networks, pooled/direct connection host choice may differ.
+
+### `P1000 Authentication failed`
+
+Recheck DB password and URL-encoding.
+
+### `EADDRINUSE: 3000`
+
+Use another port:
+
+```powershell
+$env:PORT="3001"
+npm run start:dev
+```
+
+### Frontend 401 / login loop
+
+- Verify backend is running on `127.0.0.1:3000`
+- Verify `JWT_SECRET` is set
+- Clear old token from browser localStorage (`tm_token`)
+
+## Security Note
+
+If DB credentials were exposed in logs/chats, rotate the password in Supabase immediately and update `.env`.
