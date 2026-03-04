@@ -1,86 +1,96 @@
-import { memo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, FolderKanban, Calendar, Trash2 } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
-import { getProjects, createProject, deleteProject } from '../services/api.service';
-import { extractErrorMessage } from '../lib/utils';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Modal } from '../components/ui/Modal';
-import { Card } from '../components/ui/Card';
-import { PageSpinner } from '../components/ui/Spinner';
-import { formatDate } from '../lib/utils';
-import { useAuthStore } from '../store/auth.store';
+import { memo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, FolderKanban, Calendar, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+import {
+  getProjects,
+  createProject,
+  deleteProject,
+} from "../services/api.service";
+import { extractErrorMessage } from "../lib/utils";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Modal } from "../components/ui/Modal";
+import { Card } from "../components/ui/Card";
+import { PageSpinner } from "../components/ui/Spinner";
+import { formatDate } from "../lib/utils";
+import { useAuthStore } from "../store/auth.store";
 
 export const ProjectsPage = memo(() => {
   const qc = useQueryClient();
   const { t } = useTranslation();
   const { isAdmin } = useAuthStore();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
 
   const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects'],
+    queryKey: ["projects"],
     queryFn: getProjects,
   });
 
   const { mutate: create, isPending } = useMutation({
     mutationFn: () => createProject({ name, description }),
     onSuccess: () => {
-      toast.success(t('projects.created'));
-      qc.invalidateQueries({ queryKey: ['projects'] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      toast.success(t("projects.created"));
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
-      setName('');
-      setDescription('');
+      setName("");
+      setDescription("");
     },
     onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err, 'Failed to create project.'));
+      toast.error(extractErrorMessage(err, "Failed to create project."));
     },
   });
 
   const { mutate: removeProject, isPending: isDeleting } = useMutation({
     mutationFn: deleteProject,
     onSuccess: () => {
-      toast.success(t('projects.deleted'));
-      qc.invalidateQueries({ queryKey: ['projects'] });
-      qc.invalidateQueries({ queryKey: ['tasks'] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      toast.success(t("projects.deleted"));
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err, t('projects.deleteFailed')));
+      toast.error(extractErrorMessage(err, t("projects.deleteFailed")));
     },
   });
 
   if (isLoading) return <PageSpinner />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('projects.title')}</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {t('projects.count', { count: projects?.length ?? 0 })}
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">
+            {t("projects.title")}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {t("projects.count", { count: projects?.length ?? 0 })}
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" />
-          {t('projects.newProject')}
+          {t("projects.newProject")}
         </Button>
       </div>
 
       {projects?.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-          <FolderKanban className="h-12 w-12 text-slate-300" />
+          <FolderKanban className="h-12 w-12 text-slate-300 dark:text-slate-600" />
           <div>
-            <p className="text-sm font-medium text-slate-600">{t('projects.noProjectsTitle')}</p>
-            <p className="text-xs text-slate-400">{t('projects.noProjectsHint')}</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              {t("projects.noProjectsTitle")}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              {t("projects.noProjectsHint")}
+            </p>
           </div>
           <Button size="sm" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4" />
-            {t('projects.createProject')}
+            {t("projects.createProject")}
           </Button>
         </Card>
       ) : (
@@ -88,14 +98,16 @@ export const ProjectsPage = memo(() => {
           {projects?.map((project) => (
             <Card
               key={project.id}
-              className="p-6 hover:shadow-md transition-shadow cursor-default"
+              className="p-6 hover:shadow-md transition-all cursor-default group"
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                  <FolderKanban className="h-5 w-5 text-blue-600" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                  <FolderKanban className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">#{project.id}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    #{project.id}
+                  </span>
                   {isAdmin() && (
                     <Button
                       size="sm"
@@ -103,7 +115,11 @@ export const ProjectsPage = memo(() => {
                       className="h-7 px-2"
                       disabled={isDeleting}
                       onClick={() => {
-                        if (!window.confirm(t('projects.deleteConfirm', { name: project.name }))) {
+                        if (
+                          !window.confirm(
+                            t("projects.deleteConfirm", { name: project.name }),
+                          )
+                        ) {
                           return;
                         }
                         removeProject(project.id);
@@ -115,12 +131,14 @@ export const ProjectsPage = memo(() => {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="font-semibold text-slate-900 text-sm">{project.name}</h3>
-                <p className="mt-1 text-sm text-slate-500 line-clamp-2">
-                  {project.description || t('projects.noDescription')}
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                  {project.name}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
+                  {project.description || t("projects.noDescription")}
                 </p>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
                 <Calendar className="h-3.5 w-3.5" />
                 {formatDate(project.createdAt)}
               </div>
@@ -129,7 +147,11 @@ export const ProjectsPage = memo(() => {
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title={t('projects.modalTitle')}>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t("projects.modalTitle")}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -138,28 +160,34 @@ export const ProjectsPage = memo(() => {
           className="space-y-4"
         >
           <Input
-            label={t('projects.nameLabel')}
-            placeholder={t('projects.namePlaceholder')}
+            label={t("projects.nameLabel")}
+            placeholder={t("projects.namePlaceholder")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-slate-700">{t('projects.descLabel')}</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t("projects.descLabel")}
+            </label>
             <textarea
               rows={3}
-              placeholder={t('projects.descPlaceholder')}
+              placeholder={t("projects.descPlaceholder")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+              className="w-full rounded-lg border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none transition-colors"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              {t('projects.cancel')}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setOpen(false)}
+            >
+              {t("projects.cancel")}
             </Button>
             <Button type="submit" loading={isPending} disabled={!name.trim()}>
-              {t('projects.createProject')}
+              {t("projects.createProject")}
             </Button>
           </div>
         </form>
@@ -168,4 +196,4 @@ export const ProjectsPage = memo(() => {
   );
 });
 
-ProjectsPage.displayName = 'ProjectsPage';
+ProjectsPage.displayName = "ProjectsPage";

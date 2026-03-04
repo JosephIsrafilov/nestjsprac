@@ -1,15 +1,15 @@
-import { Outlet, Navigate } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
-import { useAuthStore } from '../../store/auth.store';
-import { useQuery } from '@tanstack/react-query';
-import { getMe } from '../../services/api.service';
-import { PageSpinner } from '../ui/Spinner';
+import { Outlet, Navigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Sidebar } from "./Sidebar";
+import { useAuthStore } from "../../store/auth.store";
+import { getMe } from "../../services/api.service";
+import { PageSpinner } from "../ui/Spinner";
 
 export function AppLayout() {
   const { token, setAuth, user } = useAuthStore();
 
   const { isLoading } = useQuery({
-    queryKey: ['me'],
+    queryKey: ["me"],
     queryFn: async () => {
       const data = await getMe();
       setAuth(data, token!);
@@ -20,25 +20,20 @@ export function AppLayout() {
   });
 
   if (!token) return <Navigate to="/login" replace />;
+
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center" style={{ background: "var(--bg-app)" }}>
         <PageSpinner />
       </div>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-28 -left-24 h-80 w-80 rounded-full bg-sky-500/18 blur-3xl" />
-        <div className="absolute top-20 right-0 h-96 w-96 rounded-full bg-blue-600/15 blur-3xl" />
-      </div>
-
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg-app)" }}>
       <Sidebar />
-
-      <main className="relative z-10 flex-1 overflow-y-auto">
-        <div className="p-4 sm:p-6 lg:p-8">
+      <main className="h-screen flex-1 overflow-y-auto">
+        <div className="w-full p-4 sm:p-6 lg:p-8 xl:p-10">
           <Outlet />
         </div>
       </main>

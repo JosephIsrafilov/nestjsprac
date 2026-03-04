@@ -1,16 +1,26 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
-import { QUERY_STALE_TIME, QUERY_RETRY_COUNT } from './lib/constants';
-import { PageSpinner } from './components/ui/Spinner';
-import { AppLayout } from './components/layout/AppLayout';
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
+import { QUERY_STALE_TIME, QUERY_RETRY_COUNT } from "./lib/constants";
+import { PageSpinner } from "./components/ui/Spinner";
+import { AppLayout } from "./components/layout/AppLayout";
 
-const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const ProjectsPage = lazy(() => import('./pages/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
-const TasksPage = lazy(() => import('./pages/TasksPage').then(m => ({ default: m.TasksPage })));
-const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
+const LoginPage = lazy(() =>
+  import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })),
+);
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const ProjectsPage = lazy(() =>
+  import("./pages/ProjectsPage").then((m) => ({ default: m.ProjectsPage })),
+);
+const TasksPage = lazy(() =>
+  import("./pages/TasksPage").then((m) => ({ default: m.TasksPage })),
+);
+const UsersPage = lazy(() =>
+  import("./pages/UsersPage").then((m) => ({ default: m.UsersPage })),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,13 +34,17 @@ const queryClient = new QueryClient({
 
 const toastOptions = {
   style: {
-    borderRadius: '10px',
-    background: '#1e293b',
-    color: '#f8fafc',
-    fontSize: '14px',
+    borderRadius: "8px",
+    background: "#1e293b",
+    color: "#f8fafc",
+    fontSize: "14px",
+    padding: "12px 16px",
+    boxShadow:
+      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
   },
-  success: { iconTheme: { primary: '#22c55e', secondary: '#f8fafc' } },
-  error: { iconTheme: { primary: '#ef4444', secondary: '#f8fafc' } },
+  success: { iconTheme: { primary: "#10b981", secondary: "#f8fafc" } },
+  error: { iconTheme: { primary: "#ef4444", secondary: "#f8fafc" } },
+  duration: 3000,
 };
 
 function App() {
@@ -57,4 +71,3 @@ function App() {
 }
 
 export default App;
-
