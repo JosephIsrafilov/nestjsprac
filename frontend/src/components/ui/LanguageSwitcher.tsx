@@ -12,16 +12,16 @@ export function LanguageSwitcher() {
   const current = i18n.language?.slice(0, 2);
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-slate-800 p-1">
+    <div className="inline-flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-900/75 p-1 sm:border-slate-600 sm:bg-slate-800/65">
       {LANGS.map(({ code, label }) => (
         <button
           key={code}
           onClick={() => i18n.changeLanguage(code)}
           className={cn(
-            'rounded-md px-2 py-1 text-xs font-semibold transition-colors',
+            'rounded-lg px-2 py-1 text-xs font-semibold transition-colors',
             current === code
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-400 hover:text-slate-100'
+              ? 'bg-linear-to-r from-blue-600 to-cyan-500 text-white'
+              : 'text-slate-300 hover:text-slate-100',
           )}
         >
           {label}

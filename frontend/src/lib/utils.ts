@@ -14,10 +14,10 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<TaskStatus, string> = {
-  todo: 'bg-slate-100 text-slate-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-  review: 'bg-amber-100 text-amber-700',
-  done: 'bg-green-100 text-green-700',
+  todo: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
+  in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200',
+  review: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
+  done: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
 };
 
 export const PRIORITY_LABELS: Record<TaskPriority, string> = {
@@ -27,12 +27,12 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
 };
 
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  low: 'bg-slate-100 text-slate-600',
-  medium: 'bg-orange-100 text-orange-700',
-  high: 'bg-red-100 text-red-700',
+  low: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
+  medium: 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-200',
+  high: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200',
 };
 
-export const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+export const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#f97316'];
 
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';

@@ -20,13 +20,25 @@ export function AppLayout() {
   });
 
   if (!token) return <Navigate to="/login" replace />;
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><PageSpinner /></div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <PageSpinner />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="relative flex min-h-screen overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-28 -left-24 h-80 w-80 rounded-full bg-sky-500/18 blur-3xl" />
+        <div className="absolute top-20 right-0 h-96 w-96 rounded-full bg-blue-600/15 blur-3xl" />
+      </div>
+
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+
+      <main className="relative z-10 flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>

@@ -5,7 +5,9 @@
     "tasks": "Tasks",
     "users": "Users",
     "admin": "Admin",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "themeLight": "Light theme",
+    "themeDark": "Dark theme"
   },
   "login": {
     "title": "TaskManager",
@@ -115,6 +117,8 @@
     "reassigned": "reassigned task",
     "edited": "edited task",
     "updateFailed": "Failed to update task.",
+    "moveFailed": "Failed to move task.",
+    "emptyColumn": "Drop a task here",
     "newTaskModal": "New Task",
     "delete": "Delete",
     "deleted": "Task deleted!",

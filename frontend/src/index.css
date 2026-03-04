@@ -1,9 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --color-brand-50: #eff6ff;
   --color-brand-100: #dbeafe;
-  --color-200: #bfdbfe;
+  --color-brand-200: #bfdbfe;
   --color-brand-300: #93c5fd;
   --color-brand-400: #60a5fa;
   --color-brand-500: #3b82f6;
@@ -13,13 +14,126 @@
   --color-brand-900: #1e3a8a;
 }
 
+:root {
+  color-scheme: light;
+  --app-bg: #f3f7ff;
+  --app-bg-secondary: #eef4ff;
+  --glow-primary: rgba(14, 165, 233, 0.22);
+  --glow-secondary: rgba(37, 99, 235, 0.18);
+  --surface: rgba(255, 255, 255, 0.84);
+  --surface-strong: #ffffff;
+  --surface-soft: #f3f7ff;
+  --text-main: #0b1220;
+  --text-soft: #22324a;
+  --text-muted: #475569;
+  --text-faint: #64748b;
+  --border-color: #d6e2ff;
+  --ring-color: rgba(59, 130, 246, 0.38);
+}
+
+html.dark {
+  color-scheme: dark;
+  --app-bg: #030712;
+  --app-bg-secondary: #020617;
+  --glow-primary: rgba(14, 165, 233, 0.18);
+  --glow-secondary: rgba(37, 99, 235, 0.24);
+  --surface: rgba(15, 23, 42, 0.7);
+  --surface-strong: #0b1220;
+  --surface-soft: #0a1427;
+  --text-main: #f1f5f9;
+  --text-soft: #dbe7f8;
+  --text-muted: #b1c0d5;
+  --text-faint: #8fa2bd;
+  --border-color: #22324b;
+  --ring-color: rgba(96, 165, 250, 0.45);
+}
+
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 10% 12%, var(--glow-primary), transparent 36%),
+    radial-gradient(circle at 88% 5%, var(--glow-secondary), transparent 42%),
+    linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-secondary) 100%);
+  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Sora', 'Manrope', 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background-color: rgba(37, 99, 235, 0.35);
+}
+
+.bg-white {
+  background-color: var(--surface-strong) !important;
+}
+
+.bg-slate-50 {
+  background-color: var(--surface-soft) !important;
+}
+
+.bg-slate-50\/70 {
+  background-color: var(--surface) !important;
+}
+
+.text-slate-900 {
+  color: var(--text-main) !important;
+}
+
+.text-slate-800,
+.text-slate-700 {
+  color: var(--text-soft) !important;
+}
+
+.text-slate-600,
+.text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+.text-slate-400 {
+  color: var(--text-faint) !important;
+}
+
+.border-slate-50,
+.border-slate-100,
+.border-slate-200 {
+  border-color: var(--border-color) !important;
+}
+
+input,
+textarea,
+select {
+  color: var(--text-main);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px var(--ring-color) !important;
 }

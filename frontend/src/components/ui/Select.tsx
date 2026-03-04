@@ -11,9 +11,9 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className, id, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={id} className="text-sm font-medium text-slate-700">
+          <label htmlFor={id} className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             {label}
           </label>
         )}
@@ -21,11 +21,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900',
-            'focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500',
+            'h-10 w-full rounded-xl border border-slate-200 bg-white/90 px-3 text-sm text-slate-900 shadow-xs',
+            'focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900/65 dark:text-slate-100',
             'disabled:cursor-not-allowed disabled:opacity-50',
             error && 'border-red-500',
-            className
+            className,
           )}
           {...props}
         >
@@ -40,9 +40,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-red-500">{error}</p>}
       </div>
     );
-  }
+  },
 );
+
 Select.displayName = 'Select';

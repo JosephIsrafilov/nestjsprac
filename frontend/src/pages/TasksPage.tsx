@@ -66,12 +66,8 @@ const ActivityModal = memo(({ task, onClose }: { task: Task; onClose: () => void
                   {a.actionType === 'status_changed' && (
                     <>{t('tasks.statusChanged', { oldValue: a.oldValue, newValue: a.newValue })}</>
                   )}
-                  {a.actionType === 'reassigned' && (
-                    <>{t('tasks.reassigned')}</>
-                  )}
-                  {a.actionType === 'edited' && (
-                    <>{t('tasks.edited')}</>
-                  )}
+                  {a.actionType === 'reassigned' && <>{t('tasks.reassigned')}</>}
+                  {a.actionType === 'edited' && <>{t('tasks.edited')}</>}
                 </p>
                 <p className="text-xs text-slate-400">{formatDateTime(a.timestamp)}</p>
               </div>
@@ -280,10 +276,13 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
 });
 CreateTaskModal.displayName = 'CreateTaskModal';
 
+const BOARD_STATUS_ORDER: TaskStatus[] = ['todo', 'in_progress', 'review', 'done'];
+
 export const TasksPage = memo(() => {
   const { t } = useTranslation();
   const { isAdmin } = useAuthStore();
   const qc = useQueryClient();
+
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [activityTask, setActivityTask] = useState<Task | null>(null);
@@ -292,6 +291,8 @@ export const TasksPage = memo(() => {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterDueFrom, setFilterDueFrom] = useState('');
   const [filterDueTo, setFilterDueTo] = useState('');
+  const [dragTaskId, setDragTaskId] = useState<number | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
   const statusOptions = useMemo(() => getStatusOptions(t), [t]);
   const priorityOptions = useMemo(() => getPriorityOptions(t), [t]);
@@ -316,6 +317,25 @@ export const TasksPage = memo(() => {
       filterDueTo,
   );
 
+  const statusLabels = useMemo(() => {
+    return new Map(statusOptions.map((item) => [item.value, item.label]));
+  }, [statusOptions]);
+
+  const tasksByStatus = useMemo(() => {
+    const grouped: Record<TaskStatus, Task[]> = {
+      todo: [],
+      in_progress: [],
+      review: [],
+      done: [],
+    };
+
+    for (const task of tasks ?? []) {
+      grouped[task.status].push(task);
+    }
+
+    return grouped;
+  }, [tasks]);
+
   const { mutate: removeTask, isPending: isDeleting } = useMutation({
     mutationFn: deleteTask,
     onSuccess: () => {
@@ -328,6 +348,34 @@ export const TasksPage = memo(() => {
     },
   });
 
+  const { mutate: moveTask } = useMutation({
+    mutationFn: ({ taskId, status }: { taskId: number; status: TaskStatus }) =>
+      updateTask(taskId, { status }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err, t('tasks.moveFailed')));
+    },
+  });
+
+  const handleDropToStatus = (nextStatus: TaskStatus) => {
+    if (dragTaskId === null) {
+      return;
+    }
+
+    const currentTask = tasks?.find((task) => task.id === dragTaskId);
+    setDragTaskId(null);
+    setDragOverStatus(null);
+
+    if (!currentTask || currentTask.status === nextStatus) {
+      return;
+    }
+
+    moveTask({ taskId: currentTask.id, status: nextStatus });
+  };
+
   if (isLoading) return <PageSpinner />;
 
   return (
@@ -339,6 +387,7 @@ export const TasksPage = memo(() => {
             {t('tasks.count', { count: tasks?.length ?? 0 })}
           </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-3">
           <Input
             value={filterSearch}
@@ -404,7 +453,7 @@ export const TasksPage = memo(() => {
         </div>
       </div>
 
-      {tasks?.length === 0 ? (
+      {(tasks?.length ?? 0) === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 gap-4">
           <CheckSquare className="h-12 w-12 text-slate-300" />
           <div className="text-center">
@@ -421,130 +470,134 @@ export const TasksPage = memo(() => {
           )}
         </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="px-6 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colTask')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colStatus')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colPriority')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colProject')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colAssignee')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colDue')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {t('tasks.colActions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {tasks?.map((task) => (
-                  <tr key={task.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-slate-900">{task.title}</p>
-                        <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">
-                          {task.description}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                          STATUS_COLORS[task.status]
-                        )}
-                      >
-                        {t(`status.${task.status}`)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                          PRIORITY_COLORS[task.priority]
-                        )}
-                      >
-                        {t(`priority.${task.priority}`)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-slate-600">
-                        {task.project?.name ?? `#${task.projectId}`}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white shrink-0">
-                          {(task.assignee?.name ?? '?')[0].toUpperCase()}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {BOARD_STATUS_ORDER.map((status) => {
+            const columnTasks = tasksByStatus[status];
+
+            return (
+              <Card key={status} className="min-h-[380px] border border-slate-200 bg-slate-50/70 p-3">
+                <div
+                  className={cn('h-full', dragOverStatus === status && 'rounded-xl ring-2 ring-blue-400')}
+                  onDragOver={(event: React.DragEvent<HTMLDivElement>) => {
+                    event.preventDefault();
+                    setDragOverStatus(status);
+                  }}
+                  onDragLeave={() => {
+                    setDragOverStatus((prev) => (prev === status ? null : prev));
+                  }}
+                  onDrop={() => {
+                    handleDropToStatus(status);
+                  }}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                        STATUS_COLORS[status],
+                      )}
+                    >
+                      {statusLabels.get(status) ?? t(`status.${status}`)}
+                    </span>
+                    <span className="text-xs font-medium text-slate-500">{columnTasks.length}</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {columnTasks.length === 0 ? (
+                      <p className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-5 text-center text-xs text-slate-400">
+                        {t('tasks.emptyColumn')}
+                      </p>
+                    ) : (
+                      columnTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = 'move';
+                            setDragTaskId(task.id);
+                          }}
+                          onDragEnd={() => {
+                            setDragTaskId(null);
+                            setDragOverStatus(null);
+                          }}
+                          className={cn(
+                            'rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition',
+                            dragTaskId === task.id && 'opacity-60',
+                          )}
+                        >
+                          <p className="text-sm font-medium text-slate-900">{task.title}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{task.description}</p>
+
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span
+                              className={cn(
+                                'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                PRIORITY_COLORS[task.priority],
+                              )}
+                            >
+                              {t(`priority.${task.priority}`)}
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              {task.project?.name ?? `#${task.projectId}`}
+                            </span>
+                          </div>
+
+                          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-semibold text-white">
+                              {(task.assignee?.name ?? '?')[0].toUpperCase()}
+                            </div>
+                            <span className="truncate">{task.assignee?.name ?? task.assignedTo}</span>
+                          </div>
+
+                          <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+                            {task.dueDate && <Calendar className="h-3.5 w-3.5 shrink-0" />}
+                            {formatDate(task.dueDate)}
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditTask(task)}
+                              className="h-7 px-2 text-xs"
+                            >
+                              {t('tasks.edit')}
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setActivityTask(task)}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <Activity className="h-3 w-3" />
+                            </Button>
+                            {isAdmin() && (
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                disabled={isDeleting}
+                                onClick={() => {
+                                  if (!window.confirm(t('tasks.deleteConfirm', { title: task.title }))) {
+                                    return;
+                                  }
+                                  removeTask(task.id);
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                {t('tasks.delete')}
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-slate-600 truncate max-w-24">
-                          {task.assignee?.name ?? task.assignedTo}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1 text-slate-500">
-                        {task.dueDate && <Calendar className="h-3.5 w-3.5 shrink-0" />}
-                        {formatDate(task.dueDate)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditTask(task)}
-                          className="h-7 text-xs"
-                        >
-                          {t('tasks.edit')}
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setActivityTask(task)}
-                          className="h-7 text-xs"
-                        >
-                          <Activity className="h-3 w-3" />
-                        </Button>
-                        {isAdmin() && (
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            disabled={isDeleting}
-                            onClick={() => {
-                              if (!window.confirm(t('tasks.deleteConfirm', { title: task.title }))) {
-                                return;
-                              }
-                              removeTask(task.id);
-                            }}
-                            className="h-7 text-xs"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            {t('tasks.delete')}
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       {createOpen && <CreateTaskModal onClose={() => setCreateOpen(false)} />}
