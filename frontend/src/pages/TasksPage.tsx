@@ -289,18 +289,32 @@ export const TasksPage = memo(() => {
   const [activityTask, setActivityTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterDueFrom, setFilterDueFrom] = useState('');
+  const [filterDueTo, setFilterDueTo] = useState('');
 
   const statusOptions = useMemo(() => getStatusOptions(t), [t]);
   const priorityOptions = useMemo(() => getPriorityOptions(t), [t]);
 
   const { data: tasks, isLoading } = useQuery({
-    queryKey: ['tasks', filterStatus, filterPriority],
+    queryKey: ['tasks', filterStatus, filterPriority, filterSearch, filterDueFrom, filterDueTo],
     queryFn: () =>
       getTasks({
         ...(filterStatus ? { status: filterStatus as TaskStatus } : {}),
         ...(filterPriority ? { priority: filterPriority as TaskPriority } : {}),
+        ...(filterSearch.trim() ? { search: filterSearch.trim() } : {}),
+        ...(filterDueFrom ? { due_from: filterDueFrom } : {}),
+        ...(filterDueTo ? { due_to: filterDueTo } : {}),
       }),
   });
+
+  const hasFilters = Boolean(
+    filterStatus ||
+      filterPriority ||
+      filterSearch.trim() ||
+      filterDueFrom ||
+      filterDueTo,
+  );
 
   const { mutate: removeTask, isPending: isDeleting } = useMutation({
     mutationFn: deleteTask,
@@ -326,6 +340,26 @@ export const TasksPage = memo(() => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Input
+            value={filterSearch}
+            onChange={(e) => setFilterSearch(e.target.value)}
+            placeholder={t('tasks.searchPlaceholder')}
+            className="w-52"
+          />
+          <Input
+            type="date"
+            value={filterDueFrom}
+            onChange={(e) => setFilterDueFrom(e.target.value)}
+            className="w-40"
+            title={t('tasks.dueFromLabel')}
+          />
+          <Input
+            type="date"
+            value={filterDueTo}
+            onChange={(e) => setFilterDueTo(e.target.value)}
+            className="w-40"
+            title={t('tasks.dueToLabel')}
+          />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -350,6 +384,19 @@ export const TasksPage = memo(() => {
               </option>
             ))}
           </select>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setFilterSearch('');
+              setFilterDueFrom('');
+              setFilterDueTo('');
+              setFilterStatus('');
+              setFilterPriority('');
+            }}
+            disabled={!hasFilters}
+          >
+            {t('tasks.clearFilters')}
+          </Button>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             {t('tasks.newTask')}
@@ -363,12 +410,10 @@ export const TasksPage = memo(() => {
           <div className="text-center">
             <p className="text-sm font-medium text-slate-600">{t('tasks.noTasksFound')}</p>
             <p className="text-xs text-slate-400">
-              {filterStatus || filterPriority
-                ? t('tasks.adjustFilters')
-                : t('tasks.createFirst')}
+              {hasFilters ? t('tasks.adjustFilters') : t('tasks.createFirst')}
             </p>
           </div>
-          {!filterStatus && !filterPriority && (
+          {!hasFilters && (
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4" />
               {t('tasks.createTask')}

@@ -94,6 +94,9 @@ export interface ListTasksQuery {
   priority?: TaskPriority;
   project_id?: number;
   assigned_to?: number;
+  due_from?: string;
+  due_to?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }
