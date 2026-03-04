@@ -5,6 +5,7 @@ const LANGS = [
   { code: "en", label: "EN" },
   { code: "ru", label: "RU" },
   { code: "de", label: "DE" },
+  { code: "az", label: "AZ" },
 ];
 
 export function LanguageSwitcher() {
