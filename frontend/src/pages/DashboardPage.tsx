@@ -139,13 +139,13 @@ export const DashboardPage = memo(() => {
                   dataKey="value"
                 >
                   {pieData.map((_, index) => (
-                    <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: "var(--surface-strong)",
-                    border: "1px solid var(--border)",
+                    background: "var(--surface-tooltip)",
+                    border: "1px solid var(--border-strong)",
                     borderRadius: 10,
                     color: "var(--text-primary)",
                   }}
@@ -165,8 +165,8 @@ export const DashboardPage = memo(() => {
                 <YAxis tick={{ fontSize: 12, fill: chartTextColor }} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    background: "var(--surface-strong)",
-                    border: "1px solid var(--border)",
+                    background: "var(--surface-tooltip)",
+                    border: "1px solid var(--border-strong)",
                     borderRadius: 10,
                     color: "var(--text-primary)",
                   }}
