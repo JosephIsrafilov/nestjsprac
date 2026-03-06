@@ -1,5 +1,6 @@
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Plus,
   CheckSquare,
@@ -7,6 +8,7 @@ import {
   ChevronDown,
   Activity,
   Trash2,
+  //FolderKanban,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -186,6 +188,7 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
     queryFn: getProjects,
   });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: getUsers });
+  const { user, isAdmin } = useAuthStore();
 
   const statusOptions = useMemo(() => getStatusOptions(t), [t]);
   const priorityOptions = useMemo(() => getPriorityOptions(t), [t]);
@@ -198,6 +201,31 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
   const [assignedTo, setAssignedTo] = useState("");
   const [dueDate, setDueDate] = useState("");
 
+  const memberOnlyOwnProjects = !isAdmin();
+
+  const projectOptions = useMemo(
+    () =>
+      (projects ?? []).map((p) => {
+        const isOwn = p.createdBy === user?.id;
+        return {
+          value: p.id,
+          label: isOwn
+            ? "★ " + p.name
+            : memberOnlyOwnProjects
+              ? p.name + " (unavailable)"
+              : p.name,
+          disabled: memberOnlyOwnProjects && !isOwn,
+        };
+      }),
+    [projects, user?.id, memberOnlyOwnProjects],
+  );
+
+  const effectiveProjectId = projectOptions.some(
+    (o) => String(o.value) === projectId && !o.disabled,
+  )
+    ? projectId
+    : String(projectOptions.find((o) => !o.disabled)?.value ?? "");
+
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
       createTask({
@@ -205,7 +233,7 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
         description,
         status,
         priority,
-        project_id: Number(projectId),
+        project_id: Number(effectiveProjectId),
         assigned_to: Number(assignedTo),
         due_date: dueDate || null,
       }),
@@ -265,11 +293,8 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
         <div className="grid grid-cols-2 gap-4">
           <Select
             label={t("tasks.projectLabel")}
-            options={(projects ?? []).map((p) => ({
-              value: p.id,
-              label: p.name,
-            }))}
-            value={projectId}
+            options={projectOptions}
+            value={effectiveProjectId}
             onChange={(e) => setProjectId(e.target.value)}
             placeholder={t("tasks.selectProject")}
             required
@@ -283,6 +308,11 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
             required
           />
         </div>
+        {memberOnlyOwnProjects && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Your projects are marked with ★. Other projects are unavailable.
+          </p>
+        )}
         <Input
           label={t("tasks.dueDateLabel")}
           type="date"
@@ -296,7 +326,7 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
           <Button
             type="submit"
             loading={isPending}
-            disabled={!title.trim() || !projectId || !assignedTo}
+            disabled={!title.trim() || !effectiveProjectId || !assignedTo}
           >
             {t("tasks.createTask")}
           </Button>
@@ -318,6 +348,8 @@ export const TasksPage = memo(() => {
   const { t } = useTranslation();
   const { isAdmin } = useAuthStore();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
@@ -325,20 +357,42 @@ export const TasksPage = memo(() => {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterProject, setFilterProject] = useState(
+    () => searchParams.get("project_id") ?? "",
+  );
   const [filterDueFrom, setFilterDueFrom] = useState("");
   const [filterDueTo, setFilterDueTo] = useState("");
   const [dragTaskId, setDragTaskId] = useState<number | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(filterSearch), 350);
+    return () => clearTimeout(timer);
+  }, [filterSearch]);
+
+  useEffect(() => {
+    const pid = searchParams.get("project_id");
+    if (pid) {
+      navigate("/tasks", { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   const statusOptions = useMemo(() => getStatusOptions(t), [t]);
   const priorityOptions = useMemo(() => getPriorityOptions(t), [t]);
+
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: getProjects,
+  });
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: [
       "tasks",
       filterStatus,
       filterPriority,
-      filterSearch,
+      debouncedSearch,
+      filterProject,
       filterDueFrom,
       filterDueTo,
     ],
@@ -346,38 +400,42 @@ export const TasksPage = memo(() => {
       getTasks({
         ...(filterStatus ? { status: filterStatus as TaskStatus } : {}),
         ...(filterPriority ? { priority: filterPriority as TaskPriority } : {}),
-        ...(filterSearch.trim() ? { search: filterSearch.trim() } : {}),
+        ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+        ...(filterProject ? { project_id: Number(filterProject) } : {}),
         ...(filterDueFrom ? { due_from: filterDueFrom } : {}),
         ...(filterDueTo ? { due_to: filterDueTo } : {}),
       }),
+    placeholderData: (prev) => prev,
   });
 
   const hasFilters = Boolean(
     filterStatus ||
     filterPriority ||
     filterSearch.trim() ||
+    filterProject ||
     filterDueFrom ||
     filterDueTo,
   );
 
-  const statusLabels = useMemo(() => {
-    return new Map(statusOptions.map((item) => [item.value, item.label]));
-  }, [statusOptions]);
+  const statusLabels = useMemo(
+    () => new Map(statusOptions.map((o) => [o.value, o.label])),
+    [statusOptions],
+  );
 
-  const tasksByStatus = useMemo(() => {
-    const grouped: Record<TaskStatus, Task[]> = {
-      todo: [],
-      in_progress: [],
-      review: [],
-      done: [],
-    };
-
-    for (const task of tasks ?? []) {
-      grouped[task.status].push(task);
-    }
-
-    return grouped;
-  }, [tasks]);
+  const tasksByStatus = useMemo(
+    () =>
+      (tasks ?? []).reduce(
+        (acc, task) => {
+          acc[task.status].push(task);
+          return acc;
+        },
+        { todo: [], in_progress: [], review: [], done: [] } as Record<
+          TaskStatus,
+          Task[]
+        >,
+      ),
+    [tasks],
+  );
 
   const { mutate: removeTask, isPending: isDeleting } = useMutation({
     mutationFn: deleteTask,
@@ -404,19 +462,11 @@ export const TasksPage = memo(() => {
   });
 
   const handleDropToStatus = (nextStatus: TaskStatus) => {
-    if (dragTaskId === null) {
-      return;
-    }
-
-    const currentTask = tasks?.find((task) => task.id === dragTaskId);
+    const task = tasks?.find((t) => t.id === dragTaskId);
     setDragTaskId(null);
     setDragOverStatus(null);
-
-    if (!currentTask || currentTask.status === nextStatus) {
-      return;
-    }
-
-    moveTask({ taskId: currentTask.id, status: nextStatus });
+    if (task && task.status !== nextStatus)
+      moveTask({ taskId: task.id, status: nextStatus });
   };
 
   if (isLoading) return <PageSpinner />;
@@ -478,14 +528,28 @@ export const TasksPage = memo(() => {
               </option>
             ))}
           </select>
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="h-10 rounded-xl border bg-white/90 dark:bg-slate-800/65 border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+          >
+            <option value="">{t("tasks.allProjects")}</option>
+            {(projects ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
           <Button
             variant="secondary"
             onClick={() => {
               setFilterSearch("");
+              setDebouncedSearch("");
               setFilterDueFrom("");
               setFilterDueTo("");
               setFilterStatus("");
               setFilterPriority("");
+              setFilterProject("");
             }}
             disabled={!hasFilters}
           >

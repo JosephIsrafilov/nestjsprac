@@ -137,6 +137,8 @@ export const DashboardPage = memo(() => {
                   outerRadius={95}
                   paddingAngle={3}
                   dataKey="value"
+                  stroke="var(--bg-app)"
+                  strokeWidth={2}
                 >
                   {pieData.map((_, index) => (
                     <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />

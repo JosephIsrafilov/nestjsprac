@@ -55,7 +55,14 @@
     "delete": "Löschen",
     "deleted": "Projekt gelöscht!",
     "deleteConfirm": "Projekt \"{{name}}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "deleteFailed": "Projekt konnte nicht gelöscht werden."
+    "deleteFailed": "Projekt konnte nicht gelöscht werden.",
+    "viewAllInTasks": "Alle in Aufgaben anzeigen",
+    "noTasksInProject": "Noch keine Aufgaben in diesem Projekt.",
+    "openInTasks": "In Aufgaben öffnen",
+    "taskCreated": "Erstellt {{date}}",
+    "taskDue": "Fällig {{date}}",
+    "userFallback": "Benutzer #{{id}}",
+    "viewTasks": "Aufgaben anzeigen"
   },
   "tasks": {
     "title": "Aufgaben",
@@ -123,7 +130,8 @@
     "delete": "Löschen",
     "deleted": "Aufgabe gelöscht!",
     "deleteConfirm": "Aufgabe \"{{title}}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "deleteFailed": "Aufgabe konnte nicht gelöscht werden."
+    "deleteFailed": "Aufgabe konnte nicht gelöscht werden.",
+    "allProjects": "Alle Projekte"
   },
   "users": {
     "title": "Teammitglieder",

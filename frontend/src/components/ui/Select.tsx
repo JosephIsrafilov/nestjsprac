@@ -1,10 +1,16 @@
 import { forwardRef } from "react";
 import { cn } from "../../lib/utils";
 
+type SelectOption = {
+  value: string | number;
+  label: string;
+  disabled?: boolean;
+};
+
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
-  options: { value: string | number; label: string }[];
+  options: SelectOption[];
   placeholder?: string;
 }
 
@@ -41,7 +47,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           )}
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
               {opt.label}
             </option>
           ))}

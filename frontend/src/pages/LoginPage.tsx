@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { CheckCheck } from "lucide-react";
+import { SquareTerminal } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { AUTH_TOKEN_KEY } from "../lib/constants";
@@ -41,26 +41,28 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-900 p-4">
-      <div className="absolute right-4 top-4">
+    <div className="flex md:h-screen items-center justify-center bg-[var(--bg-app)]">
+      <div className="absolute right-6 top-6">
         <LanguageSwitcher />
       </div>
 
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 shadow-2xl shadow-indigo-600/45">
-            <CheckCheck className="h-9 w-9 text-white" />
+      <div className="w-full max-w-[400px] p-6">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent)] text-white shadow-sm mb-5">
+            <SquareTerminal className="h-6 w-6" strokeWidth={2.5} />
           </div>
-          <div>
-            <h1 className="text-3xl font-semibold text-white">{t("login.title")}</h1>
-            <p className="mt-2 text-sm text-slate-300/80">{t("login.subtitle")}</p>
-          </div>
+          <h1 className="text-2xl tracking-tight font-bold text-[var(--text-primary)]">
+            {t("login.title")}
+          </h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
+            {t("login.subtitle")}
+          </p>
         </div>
 
-        <div className="rounded-2xl border border-indigo-300/20 bg-slate-900/60 p-8 shadow-2xl backdrop-blur-xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200" htmlFor="email">
+        <div className="glass-panel rounded-xl p-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]" htmlFor="email">
                 {t("login.email")}
               </label>
               <input
@@ -69,13 +71,13 @@ export function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="login-input h-11 w-full rounded-xl border border-indigo-200/25 bg-slate-800/75 px-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/20"
+                className="h-10 w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] transition-shadow"
                 placeholder={t("login.emailPlaceholder")}
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200" htmlFor="password">
+            <div className="space-y-1.5 pt-2">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]" htmlFor="password">
                 {t("login.password")}
               </label>
               <input
@@ -84,19 +86,19 @@ export function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="login-input h-11 w-full rounded-xl border border-indigo-200/25 bg-slate-800/75 px-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/20"
+                className="h-10 w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] transition-shadow"
                 placeholder={t("login.passwordPlaceholder")}
               />
             </div>
 
-            <Button type="submit" loading={loading} className="mt-6 h-11 w-full">
+            <Button type="submit" loading={loading} className="mt-2 h-10 w-full bg-[var(--accent)] hover:bg-blue-700 text-white rounded-md font-semibold font-sans">
               {t("login.submit")}
             </Button>
           </form>
 
-          <div className="mt-6 rounded-xl border border-indigo-300/20 bg-slate-900/65 p-4">
-            <p className="text-center text-xs text-slate-400">{t("login.defaultCredentials")}</p>
-            <p className="mt-1 text-center text-xs font-mono text-slate-300">admin@example.com / admin123</p>
+          <div className="mt-6 rounded-lg bg-[var(--surface-soft)] p-4 border border-[var(--border)]">
+            <p className="text-center text-[13px] text-[var(--text-muted)]">{t("login.defaultCredentials")}</p>
+            <p className="mt-1 text-center text-[13px] font-mono font-medium text-[var(--text-secondary)]">admin@example.com / admin123</p>
           </div>
         </div>
       </div>

@@ -55,7 +55,14 @@
     "delete": "Sil",
     "deleted": "Layihe silindi!",
     "deleteConfirm": "\"{{name}}\" layihesi silinsin? Bu emeliyyati geri qaytarmaq olmur.",
-    "deleteFailed": "Layiheni silmek olmadi."
+    "deleteFailed": "Layiheni silmek olmadi.",
+    "viewAllInTasks": "Tapshiriqlarda aç",
+    "noTasksInProject": "Bu layihede henuz tapshiriq yoxdur.",
+    "openInTasks": "Tapshiriqlarda aç",
+    "taskCreated": "Yaradildi {{date}}",
+    "taskDue": "Son muddet {{date}}",
+    "userFallback": "Istifadechi #{{id}}",
+    "viewTasks": "Tapshiriqlara bax"
   },
   "tasks": {
     "title": "Tapshiriqlar",
@@ -123,7 +130,8 @@
     "delete": "Sil",
     "deleted": "Tapshiriq silindi!",
     "deleteConfirm": "\"{{title}}\" tapshirigi silinsin? Bu emeliyyati geri qaytarmaq olmur.",
-    "deleteFailed": "Tapshirigi silmek olmadi."
+    "deleteFailed": "Tapshirigi silmek olmadi.",
+    "allProjects": "Butun layiheler"
   },
   "users": {
     "title": "Komanda Uzvleri",

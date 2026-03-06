@@ -55,7 +55,14 @@
     "delete": "Delete",
     "deleted": "Project deleted!",
     "deleteConfirm": "Delete project \"{{name}}\"? This action cannot be undone.",
-    "deleteFailed": "Failed to delete project."
+    "deleteFailed": "Failed to delete project.",
+    "viewAllInTasks": "View all in Tasks",
+    "noTasksInProject": "No tasks in this project yet.",
+    "openInTasks": "Open in Tasks page",
+    "taskCreated": "Created {{date}}",
+    "taskDue": "Due {{date}}",
+    "userFallback": "User #{{id}}",
+    "viewTasks": "View tasks"
   },
   "tasks": {
     "title": "Tasks",
@@ -123,7 +130,8 @@
     "delete": "Delete",
     "deleted": "Task deleted!",
     "deleteConfirm": "Delete task \"{{title}}\"? This action cannot be undone.",
-    "deleteFailed": "Failed to delete task."
+    "deleteFailed": "Failed to delete task.",
+    "allProjects": "All projects"
   },
   "users": {
     "title": "Team Members",

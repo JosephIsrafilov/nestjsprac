@@ -57,7 +57,14 @@
     "delete": "Удалить",
     "deleted": "Проект удален!",
     "deleteConfirm": "Удалить проект \"{{name}}\"? Действие нельзя отменить.",
-    "deleteFailed": "Не удалось удалить проект."
+    "deleteFailed": "Не удалось удалить проект.",
+    "viewAllInTasks": "Открыть все в задачах",
+    "noTasksInProject": "В этом проекте пока нет задач.",
+    "openInTasks": "Открыть в задачах",
+    "taskCreated": "Создано {{date}}",
+    "taskDue": "Срок {{date}}",
+    "userFallback": "Пользователь #{{id}}",
+    "viewTasks": "Смотреть задачи"
   },
   "tasks": {
     "title": "Задачи",
@@ -127,7 +134,8 @@
     "delete": "Удалить",
     "deleted": "Задача удалена!",
     "deleteConfirm": "Удалить задачу \"{{title}}\"? Действие нельзя отменить.",
-    "deleteFailed": "Не удалось удалить задачу."
+    "deleteFailed": "Не удалось удалить задачу.",
+    "allProjects": "Все проекты"
   },
   "users": {
     "title": "Сотрудники",

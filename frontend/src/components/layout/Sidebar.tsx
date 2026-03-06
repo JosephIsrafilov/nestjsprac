@@ -6,7 +6,7 @@ import {
   CheckSquare,
   Users,
   LogOut,
-  CheckCheck,
+  SquareTerminal,
   Moon,
   Sun,
 } from "lucide-react";
@@ -44,8 +44,8 @@ export const Sidebar = memo(() => {
   return (
     <aside className="flex h-screen w-20 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface-soft)] text-[var(--text-primary)] sm:w-72">
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-5 sm:px-6">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
-          <CheckCheck className="h-5 w-5 text-white" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-white shadow-sm">
+          <SquareTerminal className="h-6 w-6" strokeWidth={2.5} />
         </div>
         <div className="hidden sm:block">
           <p className="text-base font-semibold tracking-tight text-[var(--text-primary)]">
@@ -63,10 +63,10 @@ export const Sidebar = memo(() => {
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "group flex items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors sm:justify-start",
+                  "group flex items-center justify-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors sm:justify-start",
                   isActive
-                    ? "bg-indigo-600 text-white"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] hover:text-[var(--text-primary)]",
+                    ? "bg-[var(--accent)] text-white shadow-sm"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)]",
                 )
               }
             >
@@ -90,10 +90,10 @@ export const Sidebar = memo(() => {
                   to={to}
                   className={({ isActive }) =>
                     cn(
-                      "group flex items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors sm:justify-start",
+                      "group flex items-center justify-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors sm:justify-start",
                       isActive
-                        ? "bg-indigo-600 text-white"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] hover:text-[var(--text-primary)]",
+                        ? "bg-[var(--accent)] text-white shadow-sm"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)]",
                     )
                   }
                 >
