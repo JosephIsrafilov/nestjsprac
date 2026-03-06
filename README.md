@@ -276,20 +276,6 @@ npm run lint
 
 ## Troubleshooting
 
-### `Cannot find module ... start:dev`
-
-Wrong command:
-
-```powershell
-npx run start:dev
-```
-
-Correct:
-
-```powershell
-npm run start:dev
-```
-
 ### No data appears in UI
 
 Usually one of:
