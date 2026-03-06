@@ -581,7 +581,7 @@ export const TasksPage = memo(() => {
           )}
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 stagger-children">
           {BOARD_STATUS_ORDER.map((status) => {
             const columnTasks = tasksByStatus[status];
 
@@ -592,9 +592,9 @@ export const TasksPage = memo(() => {
               >
                 <div
                   className={cn(
-                    "h-full",
+                    "h-full min-h-[150px] border-2 border-transparent transition-all duration-300 rounded-lg",
                     dragOverStatus === status &&
-                      "rounded-lg ring-2 ring-blue-400",
+                      "bg-blue-500/10 dark:bg-blue-400/10 border-blue-400/50 scale-[1.02]",
                   )}
                   onDragOver={(event: React.DragEvent<HTMLDivElement>) => {
                     event.preventDefault();
@@ -642,8 +642,9 @@ export const TasksPage = memo(() => {
                             setDragOverStatus(null);
                           }}
                           className={cn(
-                            "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm transition-all hover:shadow-md cursor-grab active:cursor-grabbing",
-                            dragTaskId === task.id && "opacity-60",
+                            "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-blue-400/50 cursor-grab active:cursor-grabbing",
+                            dragTaskId === task.id &&
+                              "opacity-40 scale-[0.97] shadow-none ring-2 ring-blue-500/50",
                           )}
                         >
                           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">

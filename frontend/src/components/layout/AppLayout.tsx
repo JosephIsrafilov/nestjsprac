@@ -23,17 +23,23 @@ export function AppLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center" style={{ background: "var(--bg-app)" }}>
+      <div
+        className="flex h-screen items-center justify-center"
+        style={{ background: "var(--bg-app)" }}
+      >
         <PageSpinner />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg-app)" }}>
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: "var(--bg-app)" }}
+    >
       <Sidebar />
       <main className="h-screen flex-1 overflow-y-auto">
-        <div className="w-full p-4 sm:p-6 lg:p-8 xl:p-10">
+        <div className="w-full p-4 sm:p-6 lg:p-8 xl:p-10 animate-fade-in">
           <Outlet />
         </div>
       </main>

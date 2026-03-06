@@ -262,11 +262,11 @@ export const ProjectsPage = memo(() => {
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 stagger-children">
           {projects?.map((project) => (
             <Card
               key={project.id}
-              className="p-6 hover:shadow-md transition-all cursor-pointer group"
+              className="p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:border-blue-400 dark:hover:border-blue-500/50"
               onClick={() => setSelectedProject(project)}
             >
               <div className="flex items-start justify-between gap-2">

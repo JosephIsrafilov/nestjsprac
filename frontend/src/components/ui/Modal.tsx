@@ -40,12 +40,12 @@ export function Modal({
       role="dialog"
     >
       <div
-        className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm animate-fade-backdrop"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative z-10 w-full rounded-xl border bg-white shadow-2xl",
+          "relative z-10 w-full rounded-xl border bg-white shadow-2xl animate-scale-in",
           "border-slate-200 dark:border-slate-700 dark:bg-slate-800",
           sizes[size],
         )}

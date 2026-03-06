@@ -14,7 +14,12 @@ import {
 } from "recharts";
 import { CheckSquare, FolderKanban, Users, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getDashboard, getTasks, getProjects, getUsers } from "../services/api.service";
+import {
+  getDashboard,
+  getTasks,
+  getProjects,
+  getUsers,
+} from "../services/api.service";
 import { Card, StatCard } from "../components/ui/Card";
 import { PageSpinner } from "../components/ui/Spinner";
 import { CHART_COLORS, formatDate } from "../lib/utils";
@@ -26,7 +31,10 @@ import {
 import { Badge } from "../components/ui/Badge";
 import type { TaskStatus } from "../types";
 
-const STATUS_BADGE: Record<TaskStatus, "default" | "info" | "warning" | "success"> = {
+const STATUS_BADGE: Record<
+  TaskStatus,
+  "default" | "info" | "warning" | "success"
+> = {
   todo: "info",
   in_progress: "info",
   review: "warning",
@@ -41,7 +49,10 @@ export const DashboardPage = memo(() => {
   const [summaryQuery, tasksQuery, projectsQuery, usersQuery] = useQueries({
     queries: [
       { queryKey: ["dashboard"], queryFn: getDashboard },
-      { queryKey: ["tasks"], queryFn: () => getTasks({ limit: DASHBOARD_TASKS_LIMIT }) },
+      {
+        queryKey: ["tasks"],
+        queryFn: () => getTasks({ limit: DASHBOARD_TASKS_LIMIT }),
+      },
       { queryKey: ["projects"], queryFn: getProjects },
       { queryKey: ["users"], queryFn: getUsers },
     ],
@@ -68,7 +79,11 @@ export const DashboardPage = memo(() => {
   );
 
   const pieData = useMemo(
-    () => summary?.byStatus.map((item) => ({ name: t(`status.${item.status}`), value: item.count })) ?? [],
+    () =>
+      summary?.byStatus.map((item) => ({
+        name: t(`status.${item.status}`),
+        value: item.count,
+      })) ?? [],
     [summary, t],
   );
 
@@ -91,11 +106,15 @@ export const DashboardPage = memo(() => {
   return (
     <div className="space-y-7">
       <div className="space-y-1.5">
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{t("dashboard.title")}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{t("dashboard.subtitle")}</p>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">
+          {t("dashboard.title")}
+        </h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          {t("dashboard.subtitle")}
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 stagger-children">
         <StatCard
           title={t("dashboard.totalTasks")}
           value={totalTasks}
@@ -107,7 +126,11 @@ export const DashboardPage = memo(() => {
           value={doneTasks}
           icon={<TrendingUp className="h-6 w-6" />}
           variant="green"
-          subtitle={totalTasks ? t("dashboard.completedPct", { pct: completionPercentage }) : undefined}
+          subtitle={
+            totalTasks
+              ? t("dashboard.completedPct", { pct: completionPercentage })
+              : undefined
+          }
         />
         <StatCard
           title={t("dashboard.projects")}
@@ -125,7 +148,9 @@ export const DashboardPage = memo(() => {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="p-6">
-          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">{t("dashboard.tasksByStatus")}</h2>
+          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">
+            {t("dashboard.tasksByStatus")}
+          </h2>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -141,7 +166,11 @@ export const DashboardPage = memo(() => {
                   strokeWidth={2}
                 >
                   {pieData.map((_, index) => (
-                    <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
+                    <Cell
+                      key={index}
+                      fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      stroke="none"
+                    />
                   ))}
                 </Pie>
                 <Tooltip
@@ -152,19 +181,42 @@ export const DashboardPage = memo(() => {
                     color: "var(--text-primary)",
                   }}
                 />
-                <Legend wrapperStyle={{ color: chartTextColor }} formatter={(value) => <span style={{ color: "var(--text-secondary)", fontWeight: 500 }}>{value}</span>} />
+                <Legend
+                  wrapperStyle={{ color: chartTextColor }}
+                  formatter={(value) => (
+                    <span
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {value}
+                    </span>
+                  )}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">{t("dashboard.tasksByMember")}</h2>
+          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">
+            {t("dashboard.tasksByMember")}
+          </h2>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData} margin={{ top: 10, right: 8, bottom: 6, left: -8 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: chartTextColor }} />
-                <YAxis tick={{ fontSize: 12, fill: chartTextColor }} allowDecimals={false} />
+              <BarChart
+                data={barData}
+                margin={{ top: 10, right: 8, bottom: 6, left: -8 }}
+              >
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: chartTextColor }}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: chartTextColor }}
+                  allowDecimals={false}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "var(--surface-tooltip)",
@@ -173,7 +225,11 @@ export const DashboardPage = memo(() => {
                     color: "var(--text-primary)",
                   }}
                 />
-                <Bar dataKey="tasks" fill="var(--accent)" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="tasks"
+                  fill="var(--accent)"
+                  radius={[8, 8, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -182,10 +238,14 @@ export const DashboardPage = memo(() => {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="p-6">
-          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">{t("dashboard.recentTasks")}</h2>
+          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">
+            {t("dashboard.recentTasks")}
+          </h2>
 
           {recentTasks.length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">{t("dashboard.noTasksYet")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {t("dashboard.noTasksYet")}
+            </p>
           ) : (
             <div className="space-y-2.5">
               {recentTasks.map((task) => (
@@ -194,10 +254,16 @@ export const DashboardPage = memo(() => {
                   className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{task.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{formatDate(task.dueDate)}</p>
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {task.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                      {formatDate(task.dueDate)}
+                    </p>
                   </div>
-                  <Badge variant={STATUS_BADGE[task.status]}>{t(`status.${task.status}`)}</Badge>
+                  <Badge variant={STATUS_BADGE[task.status]}>
+                    {t(`status.${task.status}`)}
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -205,23 +271,36 @@ export const DashboardPage = memo(() => {
         </Card>
 
         <Card className="p-6">
-          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">{t("dashboard.tasksByProject")}</h2>
+          <h2 className="mb-4 text-base font-semibold text-slate-700 dark:text-slate-200">
+            {t("dashboard.tasksByProject")}
+          </h2>
 
           {(summary?.byProject ?? []).length === 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">{t("dashboard.noProjectsYet")}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {t("dashboard.noProjectsYet")}
+            </p>
           ) : (
             <div className="space-y-4">
               {summary?.byProject.map((project) => {
-                const pct = totalTasks ? Math.round((project.count / totalTasks) * 100) : 0;
+                const pct = totalTasks
+                  ? Math.round((project.count / totalTasks) * 100)
+                  : 0;
 
                 return (
                   <div key={project.project_id} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="truncate font-medium text-slate-700 dark:text-slate-300">{project.project_name}</span>
-                      <span className="shrink-0 text-slate-600 dark:text-slate-400">{project.count}</span>
+                      <span className="truncate font-medium text-slate-700 dark:text-slate-300">
+                        {project.project_name}
+                      </span>
+                      <span className="shrink-0 text-slate-600 dark:text-slate-400">
+                        {project.count}
+                      </span>
                     </div>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                      <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                      <div
+                        className="h-full rounded-full bg-indigo-500"
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
                 );

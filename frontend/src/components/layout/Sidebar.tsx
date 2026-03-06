@@ -37,8 +37,15 @@ export const Sidebar = memo(() => {
 
   const toggleTheme = () => {
     const nextTheme: ThemeMode = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    setThemeState(nextTheme);
+    if (!document.startViewTransition) {
+      setTheme(nextTheme);
+      setThemeState(nextTheme);
+      return;
+    }
+    document.startViewTransition(() => {
+      setTheme(nextTheme);
+      setThemeState(nextTheme);
+    });
   };
 
   return (
@@ -56,7 +63,7 @@ export const Sidebar = memo(() => {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 stagger-children">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -83,7 +90,7 @@ export const Sidebar = memo(() => {
                 {t("nav.admin")}
               </p>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 stagger-children">
               {adminItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
