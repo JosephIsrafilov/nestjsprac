@@ -1,44 +1,366 @@
-import { useState, useMemo, memo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { memo, useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Plus,
-  CheckSquare,
-  Calendar,
-  ChevronDown,
   Activity,
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  MessageSquare,
+  Plus,
+  Tag,
   Trash2,
-  //FolderKanban,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import {
-  getTasks,
+  createTag,
   createTask,
-  updateTask,
+  createTaskComment,
   deleteTask,
   getProjects,
-  getUsers,
+  getTags,
   getTaskActivity,
+  getTaskComments,
+  getTasks,
+  getUsers,
+  updateTask,
 } from "../services/api.service";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Select } from "../components/ui/Select";
-import { Modal } from "../components/ui/Modal";
 import { Card } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Modal } from "../components/ui/Modal";
+import { Select } from "../components/ui/Select";
 import { PageSpinner } from "../components/ui/Spinner";
+import { getPriorityOptions, getStatusOptions } from "../lib/constants";
 import {
-  STATUS_COLORS,
   PRIORITY_COLORS,
-  formatDate,
-  formatDateTime,
+  STATUS_COLORS,
   cn,
   extractErrorMessage,
+  formatDate,
+  formatDateTime,
 } from "../lib/utils";
-import { getStatusOptions, getPriorityOptions } from "../lib/constants";
-import type { TaskStatus, TaskPriority, Task } from "../types";
-import type { TaskActivity } from "../types";
 import { useAuthStore } from "../store/auth.store";
+import type {
+  Comment,
+  CreateTagDto,
+  Tag as TaskTag,
+  Task,
+  TaskActivity,
+  TaskPriority,
+  TaskStatus,
+  User,
+} from "../types";
+
+const TAG_SWATCHES = [
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#06b6d4",
+  "#3b82f6",
+  "#8b5cf6",
+  "#64748b",
+];
+
+const SELECT_FILTER_CLASS =
+  "h-10 rounded-xl border border-slate-300 bg-white/90 px-3 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-800/65 dark:text-slate-200";
+
+const TEXTAREA_CLASS =
+  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500";
+
+const BOARD_STATUS_ORDER: TaskStatus[] = [
+  "todo",
+  "in_progress",
+  "review",
+  "done",
+];
+
+const createStatusBuckets = (): Record<TaskStatus, Task[]> => ({
+  todo: [],
+  in_progress: [],
+  review: [],
+  done: [],
+});
+
+const groupTasksByStatus = (tasks: Task[] | undefined): Record<TaskStatus, Task[]> =>
+  (tasks ?? []).reduce((accumulator, task) => {
+    accumulator[task.status].push(task);
+    return accumulator;
+  }, createStatusBuckets());
+
+const buildTasksQuery = ({
+  filterStatus,
+  filterPriority,
+  search,
+  filterProject,
+  filterDueFrom,
+  filterDueTo,
+}: {
+  filterStatus: string;
+  filterPriority: string;
+  search: string;
+  filterProject: string;
+  filterDueFrom: string;
+  filterDueTo: string;
+}) => ({
+  ...(filterStatus ? { status: filterStatus as TaskStatus } : {}),
+  ...(filterPriority ? { priority: filterPriority as TaskPriority } : {}),
+  ...(search.trim() ? { search: search.trim() } : {}),
+  ...(filterProject ? { project_id: Number(filterProject) } : {}),
+  ...(filterDueFrom ? { due_from: filterDueFrom } : {}),
+  ...(filterDueTo ? { due_to: filterDueTo } : {}),
+});
+
+const toUserOptions = (users?: User[]) =>
+  (users ?? []).map((user) => ({
+    value: user.id,
+    label: user.name,
+  }));
+
+const TagBadge = memo(({ tag }: { tag: TaskTag }) => (
+  <span
+    className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
+    style={{
+      borderColor: `${tag.color}55`,
+      backgroundColor: `${tag.color}1a`,
+      color: tag.color,
+    }}
+  >
+    {tag.name}
+  </span>
+));
+TagBadge.displayName = "TagBadge";
+
+const TagPicker = memo(
+  ({
+    selectedTagIds,
+    onChange,
+  }: {
+    selectedTagIds: number[];
+    onChange: (next: number[]) => void;
+  }) => {
+    const qc = useQueryClient();
+    const { t } = useTranslation();
+    const { data: tags, isLoading } = useQuery({
+      queryKey: ["tags"],
+      queryFn: getTags,
+    });
+
+    const [draftName, setDraftName] = useState("");
+    const [draftColor, setDraftColor] = useState(TAG_SWATCHES[7]);
+
+    const { mutate: createTagMutation, isPending } = useMutation({
+      mutationFn: (dto: CreateTagDto) => createTag(dto),
+      onSuccess: (createdTag) => {
+        toast.success(t("tasks.tagCreated"));
+        qc.invalidateQueries({ queryKey: ["tags"] });
+        onChange(
+          selectedTagIds.includes(createdTag.id)
+            ? selectedTagIds
+            : [...selectedTagIds, createdTag.id],
+        );
+        setDraftName("");
+      },
+      onError: (error: unknown) => {
+        toast.error(extractErrorMessage(error, t("tasks.createTagFailed")));
+      },
+    });
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Tag className="h-4 w-4" />
+          <span>{t("tasks.tagsLabel")}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {(tags ?? []).map((tag) => {
+            const active = selectedTagIds.includes(tag.id);
+
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() =>
+                  onChange(
+                    active
+                      ? selectedTagIds.filter((id) => id !== tag.id)
+                      : [...selectedTagIds, tag.id],
+                  )
+                }
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-transform hover:-translate-y-0.5",
+                  active && "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-800",
+                )}
+                style={{
+                  borderColor: `${tag.color}66`,
+                  backgroundColor: active ? `${tag.color}26` : `${tag.color}12`,
+                  color: tag.color,
+                }}
+              >
+                {tag.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {!isLoading && (tags?.length ?? 0) === 0 && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {t("tasks.tagsEmpty")}
+          </p>
+        )}
+
+        <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-3">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <Input
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              placeholder={t("tasks.newTagName")}
+            />
+            <Button
+              type="button"
+              loading={isPending}
+              disabled={!draftName.trim()}
+              onClick={() =>
+                createTagMutation({
+                  name: draftName.trim(),
+                  color: draftColor,
+                })
+              }
+            >
+              <Plus className="h-4 w-4" />
+              {t("tasks.createTag")}
+            </Button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {TAG_SWATCHES.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setDraftColor(color)}
+                className={cn(
+                  "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
+                  draftColor === color
+                    ? "border-slate-900 dark:border-slate-100"
+                    : "border-transparent",
+                )}
+                style={{ backgroundColor: color }}
+                aria-label={color}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+TagPicker.displayName = "TagPicker";
+
+const CommentsModal = memo(
+  ({ task, onClose }: { task: Task; onClose: () => void }) => {
+    const qc = useQueryClient();
+    const { t } = useTranslation();
+    const [content, setContent] = useState("");
+
+    const { data: comments, isLoading } = useQuery<Comment[]>({
+      queryKey: ["task-comments", task.id],
+      queryFn: () => getTaskComments(task.id),
+    });
+
+    const { mutate, isPending } = useMutation({
+      mutationFn: () => createTaskComment(task.id, { content: content.trim() }),
+      onSuccess: () => {
+        toast.success(t("tasks.commentAdded"));
+        setContent("");
+        qc.invalidateQueries({ queryKey: ["task-comments", task.id] });
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      },
+      onError: (error: unknown) => {
+        toast.error(extractErrorMessage(error, t("tasks.addCommentFailed")));
+      },
+    });
+
+    return (
+      <Modal
+        open
+        onClose={onClose}
+        title={t("tasks.commentsTitle", { title: task.title })}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+              </div>
+            ) : comments?.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">
+                {t("tasks.noComments")}
+              </p>
+            ) : (
+              comments?.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                      {comment.author?.name ?? t("common.user")}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {formatDateTime(comment.createdAt)}
+                    </p>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
+                    {comment.content}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              mutate();
+            }}
+            className="space-y-3"
+          >
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t("tasks.addComment")}
+              </label>
+              <textarea
+                rows={3}
+                value={content}
+                onChange={(event) => setContent(event.target.value)}
+                placeholder={t("tasks.commentPlaceholder")}
+                className={TEXTAREA_CLASS}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={onClose}>
+                {t("tasks.cancel")}
+              </Button>
+              <Button
+                type="submit"
+                loading={isPending}
+                disabled={!content.trim()}
+              >
+                {t("tasks.sendComment")}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+    );
+  },
+);
+CommentsModal.displayName = "CommentsModal";
 
 const ActivityModal = memo(
   ({ task, onClose }: { task: Task; onClose: () => void }) => {
@@ -57,39 +379,41 @@ const ActivityModal = memo(
       >
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           </div>
         ) : activities?.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">
+          <p className="py-8 text-center text-sm text-slate-400">
             {t("tasks.noActivity")}
           </p>
         ) : (
-          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-            {activities?.map((a) => (
-              <div key={a.id} className="flex gap-3">
-                <div className="shrink-0 w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+          <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+            {activities?.map((activity) => (
+              <div key={activity.id} className="flex gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
                   <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <p className="text-sm text-slate-700 dark:text-slate-300">
                     <span className="font-medium">
-                      {a.changedByUser?.name ?? t("common.user")}
+                      {activity.changedByUser?.name ?? t("common.user")}
                     </span>{" "}
-                    {a.actionType === "status_changed" && (
+                    {activity.actionType === "status_changed" && (
                       <>
                         {t("tasks.statusChanged", {
-                          oldValue: a.oldValue,
-                          newValue: a.newValue,
+                          oldValue: activity.oldValue,
+                          newValue: activity.newValue,
                         })}
                       </>
                     )}
-                    {a.actionType === "reassigned" && (
+                    {activity.actionType === "reassigned" && (
                       <>{t("tasks.reassigned")}</>
                     )}
-                    {a.actionType === "edited" && <>{t("tasks.edited")}</>}
+                    {activity.actionType === "edited" && (
+                      <>{t("tasks.edited")}</>
+                    )}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500">
-                    {formatDateTime(a.timestamp)}
+                    {formatDateTime(activity.timestamp)}
                   </p>
                 </div>
               </div>
@@ -102,16 +426,20 @@ const ActivityModal = memo(
 );
 ActivityModal.displayName = "ActivityModal";
 
-const EditStatusModal = memo(
+const EditTaskModal = memo(
   ({ task, onClose }: { task: Task; onClose: () => void }) => {
     const qc = useQueryClient();
     const { t } = useTranslation();
     const [status, setStatus] = useState<TaskStatus>(task.status);
     const [priority, setPriority] = useState<TaskPriority>(task.priority);
+    const [selectedTagIds, setSelectedTagIds] = useState<number[]>(
+      task.tags.map((tag) => tag.id),
+    );
     const { data: users } = useQuery({
       queryKey: ["users"],
       queryFn: getUsers,
     });
+    const userOptions = useMemo(() => toUserOptions(users), [users]);
     const [assignedTo, setAssignedTo] = useState(String(task.assignedTo));
 
     const statusOptions = useMemo(() => getStatusOptions(t), [t]);
@@ -123,6 +451,7 @@ const EditStatusModal = memo(
           status,
           priority,
           assigned_to: Number(assignedTo),
+          tag_ids: selectedTagIds,
         }),
       onSuccess: () => {
         toast.success(t("tasks.updated"));
@@ -130,7 +459,9 @@ const EditStatusModal = memo(
         qc.invalidateQueries({ queryKey: ["dashboard"] });
         onClose();
       },
-      onError: () => toast.error(t("tasks.updateFailed")),
+      onError: (error: unknown) => {
+        toast.error(extractErrorMessage(error, t("tasks.updateFailed")));
+      },
     });
 
     return (
@@ -140,8 +471,8 @@ const EditStatusModal = memo(
         title={t("tasks.editTitle", { title: task.title })}
       >
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={(event) => {
+            event.preventDefault();
             mutate();
           }}
           className="space-y-4"
@@ -150,20 +481,26 @@ const EditStatusModal = memo(
             label={t("tasks.statusLabel")}
             options={statusOptions}
             value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            onChange={(event) => setStatus(event.target.value as TaskStatus)}
           />
           <Select
             label={t("tasks.priorityLabel")}
             options={priorityOptions}
             value={priority}
-            onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            onChange={(event) =>
+              setPriority(event.target.value as TaskPriority)
+            }
           />
           <Select
             label={t("tasks.assignedTo")}
-            options={(users ?? []).map((u) => ({ value: u.id, label: u.name }))}
+            options={userOptions}
             value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
+            onChange={(event) => setAssignedTo(event.target.value)}
             placeholder={t("tasks.selectUser")}
+          />
+          <TagPicker
+            selectedTagIds={selectedTagIds}
+            onChange={setSelectedTagIds}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={onClose}>
@@ -178,7 +515,7 @@ const EditStatusModal = memo(
     );
   },
 );
-EditStatusModal.displayName = "EditStatusModal";
+EditTaskModal.displayName = "EditTaskModal";
 
 const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
   const qc = useQueryClient();
@@ -188,6 +525,7 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
     queryFn: getProjects,
   });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: getUsers });
+  const userOptions = useMemo(() => toUserOptions(users), [users]);
   const { user, isAdmin } = useAuthStore();
 
   const statusOptions = useMemo(() => getStatusOptions(t), [t]);
@@ -200,31 +538,32 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
   const [projectId, setProjectId] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
   const memberOnlyOwnProjects = !isAdmin();
 
   const projectOptions = useMemo(
     () =>
-      (projects ?? []).map((p) => {
-        const isOwn = p.createdBy === user?.id;
+      (projects ?? []).map((project) => {
+        const isOwn = project.createdBy === user?.id;
         return {
-          value: p.id,
+          value: project.id,
           label: isOwn
-            ? "★ " + p.name
+            ? `★ ${project.name}`
             : memberOnlyOwnProjects
-              ? p.name + " (unavailable)"
-              : p.name,
+              ? `${project.name} (unavailable)`
+              : project.name,
           disabled: memberOnlyOwnProjects && !isOwn,
         };
       }),
-    [projects, user?.id, memberOnlyOwnProjects],
+    [memberOnlyOwnProjects, projects, user?.id],
   );
 
   const effectiveProjectId = projectOptions.some(
-    (o) => String(o.value) === projectId && !o.disabled,
+    (option) => String(option.value) === projectId && !option.disabled,
   )
     ? projectId
-    : String(projectOptions.find((o) => !o.disabled)?.value ?? "");
+    : String(projectOptions.find((option) => !option.disabled)?.value ?? "");
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
@@ -236,6 +575,7 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
         project_id: Number(effectiveProjectId),
         assigned_to: Number(assignedTo),
         due_date: dueDate || null,
+        tag_ids: selectedTagIds,
       }),
     onSuccess: () => {
       toast.success(t("tasks.created"));
@@ -243,16 +583,16 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       onClose();
     },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err, "Failed to create task."));
+    onError: (error: unknown) => {
+      toast.error(extractErrorMessage(error, "Failed to create task."));
     },
   });
 
   return (
     <Modal open onClose={onClose} title={t("tasks.newTaskModal")} size="lg">
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
+        onSubmit={(event) => {
+          event.preventDefault();
           mutate();
         }}
         className="space-y-4"
@@ -261,7 +601,7 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
           label={t("tasks.titleLabel")}
           placeholder={t("tasks.titlePlaceholder")}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(event) => setTitle(event.target.value)}
           required
         />
         <div className="flex flex-col gap-1">
@@ -272,8 +612,8 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
             rows={2}
             placeholder={t("tasks.descPlaceholder")}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-lg border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none transition-colors"
+            onChange={(event) => setDescription(event.target.value)}
+            className={TEXTAREA_CLASS}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -281,13 +621,15 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
             label={t("tasks.statusLabel")}
             options={statusOptions}
             value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            onChange={(event) => setStatus(event.target.value as TaskStatus)}
           />
           <Select
             label={t("tasks.priorityLabel")}
             options={priorityOptions}
             value={priority}
-            onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            onChange={(event) =>
+              setPriority(event.target.value as TaskPriority)
+            }
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -295,15 +637,15 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
             label={t("tasks.projectLabel")}
             options={projectOptions}
             value={effectiveProjectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(event) => setProjectId(event.target.value)}
             placeholder={t("tasks.selectProject")}
             required
           />
           <Select
             label={t("tasks.assignLabel")}
-            options={(users ?? []).map((u) => ({ value: u.id, label: u.name }))}
+            options={userOptions}
             value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
+            onChange={(event) => setAssignedTo(event.target.value)}
             placeholder={t("tasks.selectUser")}
             required
           />
@@ -313,11 +655,12 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
             Your projects are marked with ★. Other projects are unavailable.
           </p>
         )}
+        <TagPicker selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} />
         <Input
           label={t("tasks.dueDateLabel")}
           type="date"
           value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
+          onChange={(event) => setDueDate(event.target.value)}
         />
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
@@ -337,13 +680,6 @@ const CreateTaskModal = memo(({ onClose }: { onClose: () => void }) => {
 });
 CreateTaskModal.displayName = "CreateTaskModal";
 
-const BOARD_STATUS_ORDER: TaskStatus[] = [
-  "todo",
-  "in_progress",
-  "review",
-  "done",
-];
-
 export const TasksPage = memo(() => {
   const { t } = useTranslation();
   const { isAdmin } = useAuthStore();
@@ -354,6 +690,7 @@ export const TasksPage = memo(() => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [activityTask, setActivityTask] = useState<Task | null>(null);
+  const [commentsTask, setCommentsTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
@@ -372,11 +709,11 @@ export const TasksPage = memo(() => {
   }, [filterSearch]);
 
   useEffect(() => {
-    const pid = searchParams.get("project_id");
-    if (pid) {
+    const projectId = searchParams.get("project_id");
+    if (projectId) {
       navigate("/tasks", { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, [navigate, searchParams]);
 
   const statusOptions = useMemo(() => getStatusOptions(t), [t]);
   const priorityOptions = useMemo(() => getPriorityOptions(t), [t]);
@@ -397,45 +734,34 @@ export const TasksPage = memo(() => {
       filterDueTo,
     ],
     queryFn: () =>
-      getTasks({
-        ...(filterStatus ? { status: filterStatus as TaskStatus } : {}),
-        ...(filterPriority ? { priority: filterPriority as TaskPriority } : {}),
-        ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
-        ...(filterProject ? { project_id: Number(filterProject) } : {}),
-        ...(filterDueFrom ? { due_from: filterDueFrom } : {}),
-        ...(filterDueTo ? { due_to: filterDueTo } : {}),
-      }),
-    placeholderData: (prev) => prev,
+      getTasks(
+        buildTasksQuery({
+          filterStatus,
+          filterPriority,
+          search: debouncedSearch,
+          filterProject,
+          filterDueFrom,
+          filterDueTo,
+        }),
+      ),
+    placeholderData: (previous) => previous,
   });
 
   const hasFilters = Boolean(
     filterStatus ||
-    filterPriority ||
-    filterSearch.trim() ||
-    filterProject ||
-    filterDueFrom ||
-    filterDueTo,
+      filterPriority ||
+      filterSearch.trim() ||
+      filterProject ||
+      filterDueFrom ||
+      filterDueTo,
   );
 
   const statusLabels = useMemo(
-    () => new Map(statusOptions.map((o) => [o.value, o.label])),
+    () => new Map(statusOptions.map((option) => [option.value, option.label])),
     [statusOptions],
   );
 
-  const tasksByStatus = useMemo(
-    () =>
-      (tasks ?? []).reduce(
-        (acc, task) => {
-          acc[task.status].push(task);
-          return acc;
-        },
-        { todo: [], in_progress: [], review: [], done: [] } as Record<
-          TaskStatus,
-          Task[]
-        >,
-      ),
-    [tasks],
-  );
+  const tasksByStatus = useMemo(() => groupTasksByStatus(tasks), [tasks]);
 
   const { mutate: removeTask, isPending: isDeleting } = useMutation({
     mutationFn: deleteTask,
@@ -444,8 +770,8 @@ export const TasksPage = memo(() => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err, t("tasks.deleteFailed")));
+    onError: (error: unknown) => {
+      toast.error(extractErrorMessage(error, t("tasks.deleteFailed")));
     },
   });
 
@@ -456,20 +782,34 @@ export const TasksPage = memo(() => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err, t("tasks.moveFailed")));
+    onError: (error: unknown) => {
+      toast.error(extractErrorMessage(error, t("tasks.moveFailed")));
     },
   });
 
   const handleDropToStatus = (nextStatus: TaskStatus) => {
-    const task = tasks?.find((t) => t.id === dragTaskId);
+    const task = tasks?.find((item) => item.id === dragTaskId);
     setDragTaskId(null);
     setDragOverStatus(null);
-    if (task && task.status !== nextStatus)
+
+    if (task && task.status !== nextStatus) {
       moveTask({ taskId: task.id, status: nextStatus });
+    }
   };
 
-  if (isLoading) return <PageSpinner />;
+  const clearFilters = () => {
+    setFilterSearch("");
+    setDebouncedSearch("");
+    setFilterDueFrom("");
+    setFilterDueTo("");
+    setFilterStatus("");
+    setFilterPriority("");
+    setFilterProject("");
+  };
+
+  if (isLoading) {
+    return <PageSpinner />;
+  }
 
   return (
     <div className="space-y-7">
@@ -486,71 +826,63 @@ export const TasksPage = memo(() => {
         <div className="flex flex-wrap items-center gap-3">
           <Input
             value={filterSearch}
-            onChange={(e) => setFilterSearch(e.target.value)}
+            onChange={(event) => setFilterSearch(event.target.value)}
             placeholder={t("tasks.searchPlaceholder")}
             className="w-52"
           />
           <Input
             type="date"
             value={filterDueFrom}
-            onChange={(e) => setFilterDueFrom(e.target.value)}
+            onChange={(event) => setFilterDueFrom(event.target.value)}
             className="w-40"
             title={t("tasks.dueFromLabel")}
           />
           <Input
             type="date"
             value={filterDueTo}
-            onChange={(e) => setFilterDueTo(e.target.value)}
+            onChange={(event) => setFilterDueTo(event.target.value)}
             className="w-40"
             title={t("tasks.dueToLabel")}
           />
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-10 rounded-xl border bg-white/90 dark:bg-slate-800/65 border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+            onChange={(event) => setFilterStatus(event.target.value)}
+            className={SELECT_FILTER_CLASS}
           >
             <option value="">{t("tasks.allStatuses")}</option>
-            {statusOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
           <select
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="h-10 rounded-xl border bg-white/90 dark:bg-slate-800/65 border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+            onChange={(event) => setFilterPriority(event.target.value)}
+            className={SELECT_FILTER_CLASS}
           >
             <option value="">{t("tasks.allPriorities")}</option>
-            {priorityOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+            {priorityOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
           <select
             value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
-            className="h-10 rounded-xl border bg-white/90 dark:bg-slate-800/65 border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+            onChange={(event) => setFilterProject(event.target.value)}
+            className={SELECT_FILTER_CLASS}
           >
             <option value="">{t("tasks.allProjects")}</option>
-            {(projects ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+            {(projects ?? []).map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
               </option>
             ))}
           </select>
           <Button
             variant="secondary"
-            onClick={() => {
-              setFilterSearch("");
-              setDebouncedSearch("");
-              setFilterDueFrom("");
-              setFilterDueTo("");
-              setFilterStatus("");
-              setFilterPriority("");
-              setFilterProject("");
-            }}
+            onClick={clearFilters}
             disabled={!hasFilters}
           >
             {t("tasks.clearFilters")}
@@ -563,7 +895,7 @@ export const TasksPage = memo(() => {
       </div>
 
       {(tasks?.length ?? 0) === 0 ? (
-        <Card className="flex flex-col items-center justify-center py-16 gap-4">
+        <Card className="flex flex-col items-center justify-center gap-4 py-16">
           <CheckSquare className="h-12 w-12 text-slate-300 dark:text-slate-600" />
           <div className="text-center">
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -588,21 +920,21 @@ export const TasksPage = memo(() => {
             return (
               <Card
                 key={status}
-                className="min-h-[380px] bg-slate-50 dark:bg-slate-900/50 p-3"
+                className="min-h-[380px] bg-slate-50 p-3 dark:bg-slate-900/50"
               >
                 <div
                   className={cn(
-                    "h-full min-h-[150px] border-2 border-transparent transition-all duration-300 rounded-lg",
+                    "h-full min-h-[150px] rounded-lg border-2 border-transparent transition-all duration-300",
                     dragOverStatus === status &&
-                      "bg-blue-500/10 dark:bg-blue-400/10 border-blue-400/50 scale-[1.02]",
+                      "scale-[1.02] border-blue-400/50 bg-blue-500/10 dark:bg-blue-400/10",
                   )}
                   onDragOver={(event: React.DragEvent<HTMLDivElement>) => {
                     event.preventDefault();
                     setDragOverStatus(status);
                   }}
                   onDragLeave={() => {
-                    setDragOverStatus((prev) =>
-                      prev === status ? null : prev,
+                    setDragOverStatus((current) =>
+                      current === status ? null : current,
                     );
                   }}
                   onDrop={() => {
@@ -625,7 +957,7 @@ export const TasksPage = memo(() => {
 
                   <div className="space-y-3">
                     {columnTasks.length === 0 ? (
-                      <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-5 text-center text-xs text-slate-400 dark:text-slate-500">
+                      <p className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-5 text-center text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
                         {t("tasks.emptyColumn")}
                       </p>
                     ) : (
@@ -642,9 +974,9 @@ export const TasksPage = memo(() => {
                             setDragOverStatus(null);
                           }}
                           className={cn(
-                            "rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-blue-400/50 cursor-grab active:cursor-grabbing",
+                            "cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-md active:cursor-grabbing dark:border-slate-700 dark:bg-slate-800",
                             dragTaskId === task.id &&
-                              "opacity-40 scale-[0.97] shadow-none ring-2 ring-blue-500/50",
+                              "scale-[0.97] opacity-40 shadow-none ring-2 ring-blue-500/50",
                           )}
                         >
                           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -668,6 +1000,14 @@ export const TasksPage = memo(() => {
                             </span>
                           </div>
 
+                          {task.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {task.tags.map((tag) => (
+                                <TagBadge key={tag.id} tag={tag} />
+                              ))}
+                            </div>
+                          )}
+
                           <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-semibold text-white">
                               {(task.assignee?.name ?? "?")[0].toUpperCase()}
@@ -684,6 +1024,15 @@ export const TasksPage = memo(() => {
                             {formatDate(task.dueDate)}
                           </div>
 
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            <span>
+                              {t("tasks.commentsCount", {
+                                count: task._count?.comments ?? 0,
+                              })}
+                            </span>
+                          </div>
+
                           <div className="mt-3 flex flex-wrap items-center gap-1">
                             <Button
                               size="sm"
@@ -693,6 +1042,14 @@ export const TasksPage = memo(() => {
                             >
                               {t("tasks.edit")}
                               <ChevronDown className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setCommentsTask(task)}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <MessageSquare className="h-3 w-3" />
                             </Button>
                             <Button
                               size="sm"
@@ -717,6 +1074,7 @@ export const TasksPage = memo(() => {
                                   ) {
                                     return;
                                   }
+
                                   removeTask(task.id);
                                 }}
                                 className="h-7 px-2 text-xs"
@@ -739,7 +1097,13 @@ export const TasksPage = memo(() => {
 
       {createOpen && <CreateTaskModal onClose={() => setCreateOpen(false)} />}
       {editTask && (
-        <EditStatusModal task={editTask} onClose={() => setEditTask(null)} />
+        <EditTaskModal task={editTask} onClose={() => setEditTask(null)} />
+      )}
+      {commentsTask && (
+        <CommentsModal
+          task={commentsTask}
+          onClose={() => setCommentsTask(null)}
+        />
       )}
       {activityTask && (
         <ActivityModal

@@ -86,6 +86,18 @@ export class UsersService {
         },
       });
 
+      await tx.comment.deleteMany({
+        where: {
+          OR: [
+            { authorId: userId },
+            { task: { assignedTo: userId } },
+            ...(ownedProjectIds.length > 0
+              ? [{ task: { projectId: { in: ownedProjectIds } } }]
+              : []),
+          ],
+        },
+      });
+
       await tx.task.deleteMany({
         where: {
           OR: [

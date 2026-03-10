@@ -2,6 +2,12 @@ export type UserRole = 'admin' | 'member';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskActionType = 'status_changed' | 'reassigned' | 'edited';
+export type RealtimeEventType =
+  | 'task.created'
+  | 'task.updated'
+  | 'task.deleted'
+  | 'comment.created'
+  | 'tag.created';
 
 export interface User {
   id: number;
@@ -34,6 +40,10 @@ export interface Task {
   updatedAt: string;
   project?: Project;
   assignee?: User;
+  tags: Tag[];
+  _count?: {
+    comments: number;
+  };
 }
 
 export interface TaskActivity {
@@ -45,6 +55,29 @@ export interface TaskActivity {
   changedBy: number;
   timestamp: string;
   changedByUser?: User;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  taskId: number;
+  authorId: number;
+  createdAt: string;
+  updatedAt: string;
+  author?: User;
+}
+
+export interface RealtimeEvent<T = unknown> {
+  type: RealtimeEventType;
+  payload: T;
+  timestamp: string;
 }
 
 export interface DashboardSummary {
@@ -77,6 +110,7 @@ export interface CreateTaskDto {
   project_id: number;
   assigned_to: number;
   due_date?: string | null;
+  tag_ids?: number[];
 }
 
 export interface UpdateTaskDto {
@@ -87,6 +121,16 @@ export interface UpdateTaskDto {
   project_id?: number;
   assigned_to?: number;
   due_date?: string | null;
+  tag_ids?: number[];
+}
+
+export interface CreateCommentDto {
+  content: string;
+}
+
+export interface CreateTagDto {
+  name: string;
+  color?: string;
 }
 
 export interface ListTasksQuery {

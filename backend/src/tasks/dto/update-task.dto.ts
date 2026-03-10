@@ -1,6 +1,8 @@
 import { TaskPriority, TaskStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -48,4 +50,12 @@ export class UpdateTaskDto {
     message: 'due_date must be YYYY-MM-DD format',
   })
   due_date?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @Type(() => Number)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  tag_ids?: number[];
 }

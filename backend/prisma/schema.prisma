@@ -43,6 +43,7 @@ model User {
   projects     Project[]
   tasks        Task[]         @relation("TaskAssignedTo")
   activities   TaskActivity[] @relation("ActivityChangedBy")
+  comments     Comment[]
 
   @@map("users")
 }
@@ -75,6 +76,8 @@ model Task {
   project     Project        @relation(fields: [projectId], references: [id], onDelete: Restrict)
   assignee    User           @relation("TaskAssignedTo", fields: [assignedTo], references: [id], onDelete: Restrict)
   activities  TaskActivity[]
+  comments    Comment[]
+  taskTags    TaskTag[]
 
   @@index([status])
   @@index([assignedTo])
@@ -85,16 +88,55 @@ model Task {
 
 model TaskActivity {
   id         Int            @id @default(autoincrement())
-  taskId      Int           @map("task_id")
-  actionType  TaskActionType @map("action_type")
-  oldValue    String?       @map("old_value")
-  newValue    String?       @map("new_value")
-  changedBy   Int           @map("changed_by")
-  timestamp   DateTime      @default(now())
+  taskId         Int            @map("task_id")
+  actionType     TaskActionType @map("action_type")
+  oldValue       String?        @map("old_value")
+  newValue       String?        @map("new_value")
+  changedBy      Int            @map("changed_by")
+  timestamp      DateTime       @default(now())
 
-  task        Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  changedByUser User        @relation("ActivityChangedBy", fields: [changedBy], references: [id], onDelete: Restrict)
+  task           Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedByUser  User           @relation("ActivityChangedBy", fields: [changedBy], references: [id], onDelete: Restrict)
 
   @@index([taskId])
   @@map("task_activities")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  taskId    Int      @map("task_id")
+  authorId  Int      @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([taskId, createdAt])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  color     String    @default("#64748b")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  taskTags  TaskTag[]
+
+  @@map("tags")
+}
+
+model TaskTag {
+  taskId Int @map("task_id")
+  tagId  Int @map("tag_id")
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+  @@map("task_tags")
 }

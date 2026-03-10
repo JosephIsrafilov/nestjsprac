@@ -12,10 +12,39 @@ import {
   UserRole,
 } from '@prisma/client';
 import type { CurrentUserType } from '../../auth/types/current-user.type';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RealtimeGateway } from '../../realtime/realtime.gateway';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { ListTasksQueryDto } from '../dto/list-tasks-query.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
+
+const taskDetailsInclude = Prisma.validator<Prisma.TaskInclude>()({
+  project: true,
+  assignee: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    },
+  },
+  taskTags: {
+    include: {
+      tag: true,
+    },
+  },
+  _count: {
+    select: {
+      comments: true,
+    },
+  },
+});
+
+type TaskDetails = Prisma.TaskGetPayload<{
+  include: typeof taskDetailsInclude;
+}>;
 
 type TaskWithProjectOwner = Prisma.TaskGetPayload<{
   include: {
@@ -32,14 +61,16 @@ export class TasksService {
   private static readonly DEFAULT_PAGE = 1;
   private static readonly DEFAULT_LIMIT = 50;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtimeGateway: RealtimeGateway,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(dto: CreateTaskDto, currentUser: CurrentUserType) {
-    const project = await this.getProjectOrThrow(dto.project_id);
-    await this.getUserOrThrow(dto.assigned_to);
-    this.assertProjectAccess(currentUser, project.createdBy, 'create');
+    await this.validateCreateInput(dto, currentUser);
 
-    return this.prisma.task.create({
+    const task = await this.prisma.task.create({
       data: {
         title: dto.title,
         description: dto.description,
@@ -47,34 +78,29 @@ export class TasksService {
         priority: dto.priority,
         projectId: dto.project_id,
         assignedTo: dto.assigned_to,
-        dueDate: dto.due_date
-          ? this.parseDateOnly(dto.due_date, 'due_date')
-          : null,
+        dueDate: this.mapDueDate(dto.due_date, 'due_date'),
+        taskTags: this.buildTaskTagsCreateInput(dto.tag_ids),
       },
+      include: taskDetailsInclude,
     });
+
+    const payload = this.serializeTask(task);
+    this.publishCreateSideEffects(task.id, payload);
+
+    return payload;
   }
 
-  list(query: ListTasksQueryDto) {
+  async list(query: ListTasksQueryDto) {
     const { skip, take } = this.buildPagination(query);
-
-    return this.prisma.task.findMany({
+    const tasks = await this.prisma.task.findMany({
       where: this.buildListWhere(query),
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip,
       take,
-      include: {
-        project: true,
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true,
-          },
-        },
-      },
+      include: taskDetailsInclude,
     });
+
+    return tasks.map((task) => this.serializeTask(task));
   }
 
   async update(
@@ -82,31 +108,37 @@ export class TasksService {
     dto: UpdateTaskDto,
     currentUser: CurrentUserType,
   ) {
-    const task = await this.getTaskWithProjectOwnerOrThrow(taskId);
-    this.assertProjectAccess(currentUser, task.project.createdBy, 'update');
-    this.validateTaskUpdate(task, dto);
+    const existingTask = await this.getTaskWithProjectOwnerOrThrow(taskId);
+    this.validateTaskUpdate(existingTask, dto);
+    this.assertProjectAccess(currentUser, existingTask.project.createdBy, 'update');
+    await this.validateUpdateInput(dto);
 
-    if (dto.assigned_to !== undefined) {
-      await this.getUserOrThrow(dto.assigned_to);
-    }
+    const activities = this.buildActivityLog(
+      existingTask,
+      dto,
+      currentUser.id,
+      taskId,
+    );
 
-    const updateData = this.buildTaskUpdateData(dto);
-    const activities = this.buildActivityLog(task, dto, currentUser.id, taskId);
-
-    return this.prisma.$transaction(async (tx) => {
+    const updatedTask = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.task.update({
         where: { id: taskId },
-        data: updateData,
+        data: this.buildTaskUpdateData(dto),
+        include: taskDetailsInclude,
       });
 
       if (activities.length > 0) {
-        await tx.taskActivity.createMany({
-          data: activities,
-        });
+        await tx.taskActivity.createMany({ data: activities });
       }
 
       return updated;
     });
+
+    const payload = this.serializeTask(updatedTask);
+    this.publishUpdateSideEffects(taskId, existingTask.assignedTo, dto.assigned_to);
+    this.realtimeGateway.broadcastTaskUpdated(payload);
+
+    return payload;
   }
 
   async getActivity(taskId: number) {
@@ -131,59 +163,74 @@ export class TasksService {
 
   async remove(taskId: number): Promise<{ id: number }> {
     await this.getTaskOrThrow(taskId);
+    await this.prisma.task.delete({ where: { id: taskId } });
 
-    await this.prisma.task.delete({
-      where: { id: taskId },
-    });
+    void this.notificationsService.clearTaskDueDateReminder(taskId);
+    this.realtimeGateway.broadcastTaskDeleted(taskId);
 
     return { id: taskId };
   }
 
+  private async validateCreateInput(
+    dto: CreateTaskDto,
+    currentUser: CurrentUserType,
+  ): Promise<void> {
+    const project = await this.getProjectOrThrow(dto.project_id);
+    this.assertProjectAccess(currentUser, project.createdBy, 'create');
+
+    await Promise.all([
+      this.getUserOrThrow(dto.assigned_to),
+      this.assertTagIdsExist(dto.tag_ids ?? []),
+    ]);
+  }
+
+  private async validateUpdateInput(dto: UpdateTaskDto): Promise<void> {
+    const checks: Promise<unknown>[] = [];
+
+    if (dto.assigned_to !== undefined) {
+      checks.push(this.getUserOrThrow(dto.assigned_to));
+    }
+
+    if (dto.tag_ids !== undefined) {
+      checks.push(this.assertTagIdsExist(dto.tag_ids));
+    }
+
+    if (checks.length > 0) {
+      await Promise.all(checks);
+    }
+  }
+
+  private publishCreateSideEffects(taskId: number, payload: unknown): void {
+    void this.notificationsService.queueTaskAssignedEmail(taskId);
+    void this.notificationsService.syncTaskDueDateReminder(taskId);
+    this.realtimeGateway.broadcastTaskCreated(payload);
+  }
+
+  private publishUpdateSideEffects(
+    taskId: number,
+    previousAssigneeId: number,
+    nextAssigneeId?: number,
+  ): void {
+    void this.notificationsService.syncTaskDueDateReminder(taskId);
+
+    if (
+      nextAssigneeId !== undefined &&
+      nextAssigneeId !== previousAssigneeId
+    ) {
+      void this.notificationsService.queueTaskAssignedEmail(taskId);
+    }
+  }
+
   private buildListWhere(query: ListTasksQueryDto): Prisma.TaskWhereInput {
-    const where: Prisma.TaskWhereInput = {};
+    const where: Prisma.TaskWhereInput = {
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.priority ? { priority: query.priority } : {}),
+      ...(query.assigned_to ? { assignedTo: query.assigned_to } : {}),
+      ...(query.project_id ? { projectId: query.project_id } : {}),
+    };
 
-    if (query.status) {
-      where.status = query.status;
-    }
-
-    if (query.priority) {
-      where.priority = query.priority;
-    }
-
-    if (query.assigned_to) {
-      where.assignedTo = query.assigned_to;
-    }
-
-    if (query.project_id) {
-      where.projectId = query.project_id;
-    }
-
-    let dueFrom: Date | undefined;
-    let dueTo: Date | undefined;
-
-    if (query.due_from) {
-      dueFrom = this.parseDateOnly(query.due_from, 'due_from');
-    }
-
-    if (query.due_to) {
-      dueTo = this.parseDateOnly(query.due_to, 'due_to');
-    }
-
-    if (dueFrom && dueTo && dueFrom > dueTo) {
-      throw new BadRequestException('due_from cannot be later than due_to');
-    }
-
-    if (dueFrom || dueTo) {
-      const dueDateFilter: Prisma.DateTimeNullableFilter = {};
-
-      if (dueFrom) {
-        dueDateFilter.gte = dueFrom;
-      }
-
-      if (dueTo) {
-        dueDateFilter.lte = dueTo;
-      }
-
+    const dueDateFilter = this.buildDueDateFilter(query.due_from, query.due_to);
+    if (dueDateFilter) {
       where.dueDate = dueDateFilter;
     }
 
@@ -195,9 +242,39 @@ export class TasksService {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
+      {
+        taskTags: {
+          some: {
+            tag: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
+      },
     ];
 
     return where;
+  }
+
+  private buildDueDateFilter(
+    dueFromValue?: string,
+    dueToValue?: string,
+  ): Prisma.DateTimeNullableFilter | undefined {
+    const dueFrom = dueFromValue
+      ? this.parseDateOnly(dueFromValue, 'due_from')
+      : undefined;
+    const dueTo = dueToValue ? this.parseDateOnly(dueToValue, 'due_to') : undefined;
+
+    if (!dueFrom && !dueTo) {
+      return undefined;
+    }
+
+    if (dueFrom && dueTo && dueFrom > dueTo) {
+      throw new BadRequestException('due_from cannot be later than due_to');
+    }
+
+    return {
+      ...(dueFrom ? { gte: dueFrom } : {}),
+      ...(dueTo ? { lte: dueTo } : {}),
+    };
   }
 
   private buildPagination(query: ListTasksQueryDto): {
@@ -237,10 +314,16 @@ export class TasksService {
     }
 
     if (dto.due_date !== undefined) {
-      data.dueDate =
-        dto.due_date === null
-          ? null
-          : this.parseDateOnly(dto.due_date, 'due_date');
+      data.dueDate = this.mapDueDate(dto.due_date, 'due_date');
+    }
+
+    if (dto.tag_ids !== undefined) {
+      data.taskTags = {
+        deleteMany: {},
+        create: dto.tag_ids.map((tagId) => ({
+          tag: { connect: { id: tagId } },
+        })),
+      };
     }
 
     return data;
@@ -321,71 +404,115 @@ export class TasksService {
     ownerId: number,
     action: 'create' | 'update',
   ): void {
-    if (currentUser.role === UserRole.member && ownerId !== currentUser.id) {
-      throw new ForbiddenException(
-        action === 'create'
-          ? 'You can create tasks only in your own projects'
-          : 'You can update tasks only in your own projects',
-      );
+    if (currentUser.role !== UserRole.member || ownerId === currentUser.id) {
+      return;
     }
+
+    throw new ForbiddenException(
+      action === 'create'
+        ? 'You can create tasks only in your own projects'
+        : 'You can update tasks only in your own projects',
+    );
   }
 
   private async getProjectOrThrow(projectId: number) {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project was not found');
-    }
-
-    return project;
+    return this.ensureExists(
+      this.prisma.project.findUnique({ where: { id: projectId } }),
+      'Project was not found',
+    );
   }
 
   private async getUserOrThrow(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User was not found');
-    }
-
-    return user;
+    return this.ensureExists(
+      this.prisma.user.findUnique({ where: { id: userId } }),
+      'User was not found',
+    );
   }
 
   private async getTaskOrThrow(taskId: number) {
-    const task = await this.prisma.task.findUnique({
-      where: { id: taskId },
-      select: { id: true },
-    });
-
-    if (!task) {
-      throw new NotFoundException('Task was not found');
-    }
-
-    return task;
+    return this.ensureExists(
+      this.prisma.task.findUnique({ where: { id: taskId }, select: { id: true } }),
+      'Task was not found',
+    );
   }
 
   private async getTaskWithProjectOwnerOrThrow(
     taskId: number,
   ): Promise<TaskWithProjectOwner> {
-    const task = await this.prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        project: {
-          select: {
-            createdBy: true,
+    return this.ensureExists(
+      this.prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          project: {
+            select: { createdBy: true },
           },
         },
-      },
-    });
+      }),
+      'Task was not found',
+    );
+  }
 
-    if (!task) {
-      throw new NotFoundException('Task was not found');
+  private async ensureExists<T>(
+    promise: Promise<T | null>,
+    errorMessage: string,
+  ): Promise<T> {
+    const entity = await promise;
+    if (entity) {
+      return entity;
     }
 
-    return task;
+    throw new NotFoundException(errorMessage);
+  }
+
+  private async assertTagIdsExist(tagIds: number[]): Promise<void> {
+    if (tagIds.length === 0) {
+      return;
+    }
+
+    const foundTags = await this.prisma.tag.findMany({
+      where: { id: { in: tagIds } },
+      select: { id: true },
+    });
+
+    if (foundTags.length !== new Set(tagIds).size) {
+      throw new NotFoundException('One or more tags were not found');
+    }
+  }
+
+  private buildTaskTagsCreateInput(tagIds?: number[]) {
+    if (!tagIds || tagIds.length === 0) {
+      return undefined;
+    }
+
+    return {
+      create: tagIds.map((tagId) => ({
+        tag: { connect: { id: tagId } },
+      })),
+    };
+  }
+
+  private serializeTask(task: TaskDetails) {
+    const { taskTags, ...rest } = task;
+
+    return {
+      ...rest,
+      tags: taskTags.map((taskTag) => taskTag.tag),
+    };
+  }
+
+  private mapDueDate(
+    value: string | null | undefined,
+    fieldName: string,
+  ): Date | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    return this.parseDateOnly(value, fieldName);
   }
 
   private parseDateOnly(value: string, fieldName: string): Date {

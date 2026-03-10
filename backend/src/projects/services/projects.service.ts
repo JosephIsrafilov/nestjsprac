@@ -7,14 +7,12 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateProjectDto, createdBy: number) {
-    const data = {
-      name: dto.name,
-      description: dto.description,
-      createdBy,
-    };
-
     return this.prisma.project.create({
-      data,
+      data: {
+        name: dto.name,
+        description: dto.description,
+        createdBy,
+      },
     });
   }
 
@@ -32,23 +30,17 @@ export class ProjectsService {
   }
 
   async remove(projectId: number): Promise<{ id: number }> {
-    const project = await this.prisma.project.findUnique({
+    const exists = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true },
     });
-    if (!project) {
+
+    if (!exists) {
       throw new NotFoundException('Project was not found');
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.taskActivity.deleteMany({
-        where: {
-          task: {
-            projectId,
-          },
-        },
-      });
-
+      await tx.taskActivity.deleteMany({ where: { task: { projectId } } });
       await tx.task.deleteMany({
         where: { projectId },
       });

@@ -1,12 +1,14 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./Sidebar";
+import { useRealtimeSync } from "../../lib/realtime";
 import { useAuthStore } from "../../store/auth.store";
 import { getMe } from "../../services/api.service";
 import { PageSpinner } from "../ui/Spinner";
 
 export function AppLayout() {
   const { token, setAuth, user } = useAuthStore();
+  useRealtimeSync(token && user ? token : null);
 
   const { isLoading } = useQuery({
     queryKey: ["me"],
