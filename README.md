@@ -125,6 +125,7 @@ Notes:
 
 - `DATABASE_URL`: pooled connection (runtime, pgbouncer)
 - `DIRECT_URL`: direct/session connection (migrations)
+- Prisma npm scripts fallback to `DATABASE_URL` when `DIRECT_URL` is not set
 - URL-encode special characters in password (`!` -> `%21`, etc.)
 
 ## Quick Start
@@ -134,8 +135,8 @@ Notes:
 ```powershell
 cd backend
 npm install
-npx prisma generate
-npx prisma migrate deploy
+npm run prisma:generate
+npm run db:migrate:deploy
 npm run prisma:seed
 npm run start:dev
 ```
@@ -260,6 +261,9 @@ cd backend
 npm run start:dev
 npm run build
 npm run lint
+npm run prisma:generate
+npm run db:migrate:status
+npm run db:migrate:deploy
 npm run db:reset
 npx prisma studio
 ```
@@ -289,7 +293,7 @@ Fix sequence:
 
 ```powershell
 cd backend
-npx prisma migrate deploy
+npm run db:migrate:deploy
 npm run prisma:seed
 npm run start:dev
 ```
